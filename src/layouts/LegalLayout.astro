@@ -1,0 +1,26 @@
+---
+import PageHeader from "@/components/ui/PageHeader.astro";
+import { formatDate } from "@/lib/format";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+/** The layout for the Markdown pages in `src/pages/legal`. */
+interface Props {
+  frontmatter: {
+    title: string;
+    description: string;
+    /** The date the page last changed, as YYYY-MM-DD. */
+    updated: string;
+  };
+}
+
+const { title, description, updated } = Astro.props.frontmatter;
+---
+
+<BaseLayout title={title} description={description}>
+  <PageHeader eyebrow="Legal" title={title} lead={`Last updated ${formatDate(new Date(updated))}`} />
+  <div class="shell section">
+    <article class="prose mx-auto max-w-3xl">
+      <slot />
+    </article>
+  </div>
+</BaseLayout>

@@ -1,0 +1,158 @@
+---
+import { render } from "astro:content";
+import InsightCard from "@/components/insights/InsightCard.astro";
+import PersonCard from "@/components/people/PersonCard.astro";
+import ServiceGrid from "@/components/services/ServiceGrid.astro";
+import CaseCard from "@/components/work/CaseCard.astro";
+import CtaBand from "@/components/ui/CtaBand.astro";
+import DetailHero from "@/components/ui/DetailHero.astro";
+import SectionHead from "@/components/ui/SectionHead.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { casesForIndustry, getIndustries, getServices, getWork, type Industry } from "@/lib/catalog";
+import { getInsights, insightsFor } from "@/lib/insights";
+import { getPeople, peopleFor } from "@/lib/people";
+
+export async function getStaticPaths() {
+  const industries = await getIndustries();
+  return industries.map((industry) => ({ params: { slug: industry.id }, props: { industry } }));
+}
+
+interface Props {
+  industry: Industry;
+}
+
+const { industry } = Astro.props;
+const { Content } = await render(industry);
+const { data } = industry;
+const services = await getServices();
+const used = data.services
+  .map((ref) => services.find((service) => service.id === ref.id))
+  .filter((service) => service !== undefined)
+  .slice(0, 3);
+const cases = casesForIndustry(await getWork(), industry.id);
+const experts = peopleFor(await getPeople(), "industries", industry.id).slice(0, 4);
+const reading = insightsFor(await getInsights(), "industries", industry.id).slice(0, 3);
+const story = cases.find((item) => item.data.quote);
+---
+
+<BaseLayout title={data.title} description={data.description} image={data.cover} imageAlt={data.coverAlt}>
+  <DetailHero
+    eyebrow="Industry"
+    title={data.title}
+    lead={data.summary}
+    crumbs={[{ label: "Industries", href: "/industries/" }, { label: data.title, href: `/industries/${industry.id}/` }]}
+    figures={data.figures}
+    cover={data.cover}
+    coverAlt={data.coverAlt}
+  />
+
+  <section class="section">
+    <div class="shell grid gap-12 lg:grid-cols-12 lg:gap-10">
+      <div class="lg:col-span-4">
+        <p class="eyebrow">Overview</p>
+        <p class="mt-5 max-w-xs text-lead text-muted">{data.description}</p>
+      </div>
+      <div class="prose max-w-none lg:col-span-8 xl:col-span-7">
+        <Content />
+      </div>
+    </div>
+  </section>
+
+  {
+    data.shifts.length > 0 && (
+      <section class="on-night glass glass-2 relative" data-tone="dark">
+        <div class="shell section">
+          <SectionHead eyebrow="What is shifting" title={["The forces reshaping", data.title.toLowerCase()]} align="split" />
+          <ul class="mt-14 grid gap-3 sm:grid-cols-2 lg:mt-20 lg:grid-cols-4">
+            {data.shifts.map((shift, index) => (
+              <li class="reveal card flex flex-col p-6 ring-1 ring-night-line lg:p-7" style={`--i:${index}`}>
+                <span class="text-sm text-accent">{String(index + 1).padStart(2, "0")}</span>
+                <h3 class="mt-12 text-title">{shift.title}</h3>
+                <p class="mt-2 text-night-muted">{shift.body}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    story?.data.quote && (
+      <section class="section border-b border-line">
+        <figure class="shell max-w-5xl text-center">
+          <blockquote class="text-display-md reveal">“{story.data.quote.text}”</blockquote>
+          <figcaption class="reveal mt-8 text-muted">
+            {story.data.quote.role}, {story.data.client.replace(/^A /, "a ")}
+          </figcaption>
+        </figure>
+      </section>
+    )
+  }
+
+  {
+    used.length > 0 && (
+      <section class="section">
+        <div class="shell">
+          <SectionHead eyebrow="Services" title={["How we help", "in this sector"]} link={{ label: "All services", href: "/services/" }} />
+          <div class="mt-12 lg:mt-16">
+            <ServiceGrid services={used} />
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    cases.length > 0 && (
+      <section class="section bg-wash">
+        <div class="shell">
+          <SectionHead eyebrow="Our work" title={["Results in", data.title.toLowerCase()]} link={{ label: "All case studies", href: "/work/" }} />
+          <ul class="mt-12 grid gap-x-6 gap-y-14 md:grid-cols-3 lg:mt-16">
+            {cases.slice(0, 3).map((item, index) => (
+              <li class="reveal" style={`--i:${index}`}>
+                <CaseCard item={item} industry={industry} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    experts.length > 0 && (
+      <section class="section">
+        <div class="shell">
+          <SectionHead eyebrow="Experts" title={["Who leads", "the sector team"]} link={{ label: "All people", href: "/people/" }} />
+          <ul class="mt-12 grid grid-cols-2 gap-x-4 gap-y-10 lg:mt-16 lg:grid-cols-4 lg:gap-x-6">
+            {experts.map((person, index) => (
+              <li class="reveal" style={`--i:${index}`}>
+                <PersonCard person={person} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    reading.length > 0 && (
+      <section class="section border-t border-line">
+        <div class="shell">
+          <SectionHead eyebrow="Insights" title={["Further", "reading"]} link={{ label: "All insights", href: "/insights/" }} />
+          <ul class="mt-12 grid gap-x-6 gap-y-14 md:grid-cols-3 lg:mt-16">
+            {reading.map((entry, index) => (
+              <li class="reveal" style={`--i:${index}`}>
+                <InsightCard entry={entry} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  <CtaBand />
+</BaseLayout>

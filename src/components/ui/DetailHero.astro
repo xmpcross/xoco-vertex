@@ -1,0 +1,50 @@
+---
+import type { ImageMetadata } from "astro";
+import { Image } from "astro:assets";
+import Arrow from "@/components/ui/Arrow.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import { siteConfig } from "@/config/site";
+
+/** The opening of a service or industry page: a dark header with key figures, then the cover. */
+interface Props {
+  eyebrow: string;
+  title: string;
+  lead: string;
+  crumbs: { label: string; href: string }[];
+  figures: { value: string; label: string }[];
+  cover: ImageMetadata;
+  coverAlt: string;
+}
+
+const { eyebrow, title, lead, crumbs, figures, cover, coverAlt } = Astro.props;
+const { primary } = siteConfig.actions;
+---
+
+<PageHeader eyebrow={eyebrow} title={title} lead={lead} crumbs={crumbs} glass={3} class="pb-28 lg:pb-40">
+  <div class="rise mt-10 flex flex-wrap gap-3" style="--i:3">
+    <a href={primary.href} class="btn btn-light">
+      {primary.label}
+      <Arrow />
+    </a>
+  </div>
+</PageHeader>
+
+<div class="shell relative -mt-28 lg:-mt-40">
+  <div class="rise grid overflow-hidden rounded-lg bg-sunken lg:grid-cols-12" style="--i:3">
+    <div class="relative aspect-16/10 lg:col-span-8 lg:aspect-auto lg:min-h-[30rem]">
+      <Image src={cover} alt={coverAlt} widths={[640, 960, 1400, 1800]} sizes="(min-width: 82rem) 54rem, 92vw" loading="eager" class="absolute inset-0 size-full object-cover" />
+    </div>
+    {
+      figures.length > 0 && (
+        <dl class="grid bg-wash sm:grid-cols-3 lg:col-span-4 lg:grid-cols-1">
+          {figures.map((figure) => (
+            <div class="flex flex-col justify-end gap-2 border-line p-6 not-first:border-t sm:not-first:border-t-0 sm:not-first:border-l lg:p-8 lg:not-first:border-t lg:not-first:border-l-0">
+              <dt class="order-2 text-sm leading-snug text-muted">{figure.label}</dt>
+              <dd class="order-1 text-[clamp(1.9rem,1.5rem+1.2vw,2.6rem)] leading-none tracking-[-0.04em]">{figure.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )
+    }
+  </div>
+</div>

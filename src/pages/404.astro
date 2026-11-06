@@ -1,0 +1,34 @@
+---
+import Arrow from "@/components/ui/Arrow.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+const links = [
+  { label: "Services", href: "/services/" },
+  { label: "Our work", href: "/work/" },
+  { label: "Insights", href: "/insights/" },
+  { label: "Contact", href: "/contact/" },
+];
+---
+
+<BaseLayout title="Page not found" description="The page you were looking for has moved or no longer exists." noindex>
+  <section class="on-night glass glass-3 relative flex min-h-[78vh] items-center overflow-hidden" data-tone="dark">
+    <div class="shell relative py-24">
+      <p class="eyebrow rise">Error 404</p>
+      <h1 class="text-display-xl rise mt-6 max-w-3xl" style="--i:1"><span class="dim">This page</span> took a different course.</h1>
+      <p class="rise mt-6 max-w-lg text-lead text-night-muted" style="--i:2">It may have moved, or the link may be out of date. These are good places to pick up again.</p>
+      <div class="rise mt-10 flex flex-wrap gap-3" style="--i:3">
+        <a href="/" class="btn btn-light">
+          Back to home
+          <Arrow />
+        </a>
+        {
+          links.map((link) => (
+            <a href={link.href} class="btn btn-outline">
+              {link.label}
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+</BaseLayout>

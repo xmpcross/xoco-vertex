@@ -1,0 +1,31 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import InsightArchive from "@/components/insights/InsightArchive.astro";
+import { pageSize } from "@/config/insights";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getInsights, leadEntry } from "@/lib/insights";
+import { getPeople, peopleById } from "@/lib/people";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const entries = await getInsights();
+  const lead = leadEntry(entries);
+  /* The lead sits above the grid on page one, so every page still has a full grid. */
+  const rest = entries.filter((entry) => entry !== lead);
+  return paginate(rest, { pageSize, props: { lead } });
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { page, lead } = Astro.props as Props;
+const first = page.currentPage === 1;
+const people = peopleById(await getPeople());
+---
+
+<BaseLayout
+  title={first ? "Insights" : `Insights, page ${page.currentPage}`}
+  description="Articles, reports and events from Vertex partners on strategy, operations, AI, transformation and deals."
+  prevUrl={page.url.prev}
+  nextUrl={page.url.next}
+>
+  <InsightArchive entries={page.data} lead={first ? lead : undefined} people={people} current={page.currentPage} last={page.lastPage} base="/insights/" />
+</BaseLayout>

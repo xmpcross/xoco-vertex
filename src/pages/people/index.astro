@@ -1,0 +1,97 @@
+---
+import PersonCard from "@/components/people/PersonCard.astro";
+import CtaBand from "@/components/ui/CtaBand.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import { offices } from "@/config/offices";
+import { peopleGroups } from "@/config/people";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getPeople } from "@/lib/people";
+
+const people = await getPeople();
+const groups = peopleGroups
+  .map((group) => ({ group, members: people.filter((person) => person.data.group === group) }))
+  .filter(({ members }) => members.length > 0);
+---
+
+<BaseLayout title="People" description="The partners and senior advisors who lead Vertex engagements, in New York, London, Zurich and Singapore.">
+  <PageHeader
+    eyebrow="People"
+    title={["The people who", "lead the work"]}
+    lead="Every engagement is led by one of our partners, who stays with it until the results are in. Meet the people you would work with."
+    crumbs={[{ label: "People", href: "/people/" }]}
+  >
+    <div class="rise mt-12 flex flex-wrap gap-2" style="--i:3" role="group" aria-label="Filter by office" data-office-filter>
+      <button type="button" class="office-tab" aria-pressed="true" data-office="">All offices</button>
+      {
+        offices.map((office) => (
+          <button type="button" class="office-tab" aria-pressed="false" data-office={office.id}>
+            {office.city}
+          </button>
+        ))
+      }
+    </div>
+  </PageHeader>
+
+  <div class="section">
+    <div class="shell grid gap-20 lg:gap-28">
+      {
+        groups.map(({ group, members }) => (
+          <section class="grid gap-10" data-group>
+            <h2 class="text-display-md">{group}</h2>
+            <ul class="grid grid-cols-2 gap-x-4 gap-y-12 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-6">
+              {members.map((person) => (
+                <li data-person data-office={person.data.office}>
+                  <PersonCard person={person} sizes="(min-width: 64rem) 19rem, (min-width: 40rem) 30vw, 46vw" />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+      <p class="hidden text-center text-muted" data-people-empty>Nobody from this office in the list yet.</p>
+    </div>
+  </div>
+
+  <CtaBand />
+</BaseLayout>
+
+<style>
+  .office-tab {
+    min-height: 2.25rem;
+    padding: 0 0.95rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    color: var(--night-muted);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+
+  .office-tab:hover {
+    color: var(--night-ink);
+  }
+
+  .office-tab[aria-pressed="true"] {
+    background: #fff;
+    color: var(--ink);
+    box-shadow: none;
+  }
+</style>
+
+<script>
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>("[data-office-filter] button")];
+  const people = [...document.querySelectorAll<HTMLElement>("[data-person]")];
+  const groups = [...document.querySelectorAll<HTMLElement>("[data-group]")];
+  const empty = document.querySelector<HTMLElement>("[data-people-empty]");
+
+  buttons.forEach((button) =>
+    button.addEventListener("click", () => {
+      const office = button.dataset.office ?? "";
+      buttons.forEach((other) => other.setAttribute("aria-pressed", String(other === button)));
+      people.forEach((person) => (person.hidden = !!office && person.dataset.office !== office));
+      groups.forEach((group) => (group.hidden = !group.querySelector("[data-person]:not([hidden])")));
+      empty?.classList.toggle("hidden", groups.some((group) => !group.hidden));
+    }),
+  );
+</script>

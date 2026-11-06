@@ -1,0 +1,741 @@
+---
+import type { ImageMetadata } from "astro";
+import { Image } from "astro:assets";
+import careersPhoto from "@/assets/images/careers.jpg";
+import Arrow from "@/components/ui/Arrow.astro";
+import Icon from "@/components/ui/Icon.astro";
+import Wordmark from "@/components/ui/Wordmark.astro";
+import { insightTypes, insightTypeKeys } from "@/config/insights";
+import { firmMenu, navigation, siteConfig } from "@/config/site";
+import { roles } from "@/config/careers";
+import { getIndustries, getServices, industryHref, serviceHref } from "@/lib/catalog";
+import { formatDate } from "@/lib/format";
+import { getInsights, insightHref, typeHref, typeOne } from "@/lib/insights";
+
+interface Props {
+  /** The tone of the section the page opens on, so the bar starts right before the script runs. */
+  tone?: "light" | "dark";
+}
+
+const { tone = "light" } = Astro.props;
+const services = await getServices();
+const industries = await getIndustries();
+const latest = (await getInsights()).find((entry) => entry.data.cover);
+const { primary } = siteConfig.actions;
+const path = Astro.url.pathname;
+
+const isCurrent = (href: string) => href !== "/" && path.startsWith(href);
+const menus = navigation.map((item, index) => ({ ...item, id: `menu-${index}`, index }));
+
+interface MenuLink {
+  label: string;
+  href: string;
+  description?: string;
+  icon?: string;
+  photo?: ImageMetadata;
+  figure?: { value: string; label: string };
+}
+
+/* Each panel: an intro on the left, links in the middle, a photo card on the right. */
+const panels: Record<string, { intro: string; all?: { label: string; href: string }; links: MenuLink[] }> = {
+  services: {
+    intro: "Six practices, staffed as one team around the question you bring us.",
+    all: { label: "All services", href: "/services/" },
+    links: services.map((service) => ({
+      label: service.data.title,
+      href: serviceHref(service),
+      description: service.data.summary,
+      icon: service.data.icon,
+      photo: service.data.cover,
+      figure: service.data.outcomes[0],
+    })),
+  },
+  industries: {
+    intro: "Sector teams who know your market, your regulators and your numbers.",
+    all: { label: "All industries", href: "/industries/" },
+    links: industries.map((industry) => ({
+      label: industry.data.title,
+      href: industryHref(industry),
+      description: industry.data.summary,
+      icon: industry.data.icon,
+      photo: industry.data.cover,
+      figure: industry.data.figures[0],
+    })),
+  },
+  insights: {
+    intro: "Research, points of view and briefings from our partners.",
+    all: { label: "All insights", href: "/insights/" },
+    links: insightTypeKeys.map((key) => ({
+      label: insightTypes[key].label,
+      href: typeHref(key),
+      description: insightTypes[key].description,
+      icon: key === "articles" ? "newspaper" : key === "reports" ? "file-text" : "calendar-days",
+    })),
+  },
+  firm: {
+    intro: "An independent partnership of 380 people in four offices.",
+    links: firmMenu.map((link, index) => ({
+      ...link,
+      icon: ["building-2", "users-round", "briefcase", "mail"][index],
+    })),
+  },
+};
+
+const mobileLinks = (menu: string) => {
+  const panel = panels[menu];
+  return panel ? [...panel.links, ...(panel.all ? [panel.all] : [])] : [];
+};
+---
+
+<header class="site-header sticky top-0 z-50 -mb-(--header-h)" data-header data-tone={tone} data-top>
+  <div class="header-bar relative z-20">
+    <div class="shell grid h-(--header-h) grid-cols-[1fr_auto] items-center gap-6 lg:grid-cols-[1fr_auto_1fr]">
+      <a href="/" class="flex w-fit shrink-0" aria-label={`${siteConfig.name} home`} data-logo-menu-trigger>
+        <Wordmark class="h-[1.3rem]" />
+      </a>
+
+      <nav class="hidden lg:block" aria-label="Main">
+        <ul class="flex items-center gap-1">
+          {
+            menus.map((item) => (
+              <li>
+                {item.menu ? (
+                  <button
+                    type="button"
+                    class="nav-trigger"
+                    aria-expanded="false"
+                    aria-controls={item.id}
+                    data-current={isCurrent(item.href) ? "" : undefined}
+                    data-menu-trigger={item.id}
+                  >
+                    {item.label}
+                    <Icon name="chevron-down" class="nav-chevron size-3.5" />
+                  </button>
+                ) : (
+                  <a href={item.href} class="nav-trigger" aria-current={isCurrent(item.href) ? "page" : undefined}>
+                    {item.label}
+                  </a>
+                )}
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div class="flex items-center justify-end gap-2">
+        <a href={primary.href} class="header-cta btn btn-sm hidden sm:inline-flex">
+          {primary.label}
+          <Arrow />
+        </a>
+        <button
+          type="button"
+          class="-mr-2 grid size-11 place-items-center lg:hidden"
+          aria-expanded="false"
+          aria-controls="mobile-nav"
+          aria-label="Open menu"
+          data-mobile-toggle
+        >
+          <span class="grid" data-icon-open><Icon name="menu" class="size-5" /></span>
+          <span class="hidden" data-icon-close><Icon name="x" class="size-5" /></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mega absolute inset-x-0 top-full z-10 hidden lg:block" data-mega>
+    <div class="mega-panel" data-mega-panel>
+      {
+        menus.map((item) => {
+          const panel = item.menu ? panels[item.menu] : undefined;
+          if (!panel) return null;
+          const shots = panel.links.filter((link) => link.photo);
+          return (
+            <div id={item.id} class="mega-content" style={`--order:${item.index}`} inert data-menu-panel>
+              <div class="shell grid grid-cols-[14rem_1fr_19rem] gap-10 pt-9 pb-10 xl:grid-cols-[16rem_1fr_22rem] xl:gap-14">
+                <div class="flex flex-col border-r border-line pr-10">
+                  <p class="eyebrow">{item.label}</p>
+                  <p class="mt-4 text-[1.0625rem] leading-snug tracking-[-0.015em] text-ink">{panel.intro}</p>
+                  {panel.all && (
+                    <a href={panel.all.href} class="group mt-auto inline-flex items-center gap-2 pt-8 text-[0.9375rem] font-medium" data-menu-link>
+                      <span class="link">{panel.all.label}</span>
+                      <Arrow />
+                    </a>
+                  )}
+                </div>
+
+                <ul class:list={["grid content-start gap-x-4", panel.links.length > 4 ? "grid-cols-2" : "grid-cols-1 xl:grid-cols-2"]} data-mega-links>
+                  {panel.links.map((link) => (
+                    <li>
+                      <a href={link.href} class="mega-link" data-menu-link data-photo={link.photo ? link.href : undefined} aria-current={isCurrent(link.href) ? "page" : undefined}>
+                        {link.icon && (
+                          <span class="mega-icon">
+                            <Icon name={link.icon} class="size-4" />
+                          </span>
+                        )}
+                        <span class="min-w-0">
+                          <span class="block text-[0.9375rem] leading-snug font-medium">{link.label}</span>
+                          {link.description && <span class="mt-0.5 block text-[0.84375rem] leading-snug text-muted">{link.description}</span>}
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+
+                <div class="relative">
+                  {item.menu === "insights" && latest?.data.cover ? (
+                    <a href={insightHref(latest)} class="mega-feature group" data-menu-link>
+                      <span class="block aspect-16/10 overflow-hidden rounded-(--radius) bg-sunken">
+                        <Image src={latest.data.cover} alt="" width={520} height={325} class="size-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      </span>
+                      <span class="mt-4 block text-xs text-muted">
+                        Latest {typeOne(latest.data.type).toLowerCase()} · {formatDate(latest.data.date)}
+                      </span>
+                      <span class="mt-1 line-clamp-2 block leading-snug font-medium">
+                        <span class="link">{latest.data.title}</span>
+                      </span>
+                    </a>
+                  ) : item.menu === "firm" ? (
+                    <a href="/careers/" class="mega-feature group" data-menu-link>
+                      <span class="relative block aspect-16/10 overflow-hidden rounded-(--radius) bg-sunken">
+                        <Image src={careersPhoto} alt="" width={520} height={325} class="size-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                        <span class="result absolute top-3 left-3">{roles.length} open roles</span>
+                      </span>
+                      <span class="mt-4 block text-xs text-muted">Careers</span>
+                      <span class="mt-1 block leading-snug font-medium">
+                        <span class="link">Do the best work of your career with people who care how it lands</span>
+                      </span>
+                    </a>
+                  ) : (
+                    <>
+                      <div class="invisible" aria-hidden="true">
+                        <span class="block aspect-16/10" />
+                        <span class="mt-4 block text-xs">&nbsp;</span>
+                        <span class="mt-1 block leading-snug">&nbsp;</span>
+                      </div>
+                      {shots.map((link, index) => (
+                        <div class="mega-shot" aria-hidden="true" data-shot={link.href} data-first={index === 0 ? "" : undefined}>
+                          <span class="relative block aspect-16/10 overflow-hidden rounded-(--radius) bg-sunken">
+                            <Image src={link.photo!} alt="" width={520} height={325} class="size-full object-cover" />
+                            {link.figure && (
+                              <span class="result absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] bg-white! text-ink!">
+                                <span class="font-semibold">{link.figure.value}</span>
+                                <span class="truncate text-muted">{link.figure.label}</span>
+                              </span>
+                            )}
+                          </span>
+                          <span class="mt-4 block text-xs text-muted">{item.label}</span>
+                          <span class="mt-1 block leading-snug font-medium">{link.label}</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })
+      }
+    </div>
+  </div>
+
+  <div id="mobile-nav" class="mobile-nav fixed inset-x-0 top-0 bottom-0 z-10 overflow-y-auto bg-page lg:hidden" inert data-mobile-nav>
+    <nav class="shell flex min-h-full flex-col pt-2 pb-8" aria-label="Mobile">
+      <ul class="divide-y divide-line border-b border-line">
+        {
+          menus.map((item) => {
+            const links = item.menu ? mobileLinks(item.menu) : [];
+            return (
+              <li>
+                {links.length > 0 ? (
+                  <details class="mobile-group" name="mobile-menu">
+                    <summary class="flex items-center justify-between py-4 text-2xl tracking-[-0.03em]">
+                      {item.label}
+                      <Icon name="plus" class="mobile-plus size-4 text-muted" />
+                    </summary>
+                    <ul class="grid gap-1 pb-5">
+                      {links.map((link) => (
+                        <li>
+                          <a href={link.href} class="block py-1.5 text-[1.0625rem] text-muted hover:text-ink" data-menu-link>
+                            {link.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : (
+                  <a href={item.href} class="block py-4 text-2xl tracking-[-0.03em]" data-menu-link>
+                    {item.label}
+                  </a>
+                )}
+              </li>
+            );
+          })
+        }
+      </ul>
+      <div class="mt-auto grid gap-3 pt-10">
+        <a href={primary.href} class="btn btn-primary w-full" data-menu-link>
+          {primary.label}
+          <Arrow />
+        </a>
+        <a href={`mailto:${siteConfig.email}`} class="btn btn-outline w-full">{siteConfig.email}</a>
+      </div>
+    </nav>
+  </div>
+
+  <div class="mega-scrim fixed inset-0 -z-10 hidden bg-black/30 lg:block" data-menu-scrim></div>
+</header>
+
+<style>
+  .site-header {
+    transition: transform 0.4s var(--ease-out-expo);
+  }
+
+  /* Sticky only on the way up: scrolling down slides the bar away. */
+  .site-header[data-hidden] {
+    transform: translateY(-100%);
+  }
+
+  .header-bar {
+    background: var(--page);
+    color: var(--ink);
+    transition:
+      background-color 0.35s,
+      color 0.35s,
+      box-shadow 0.35s;
+  }
+
+  .header-cta {
+    --chip-bg: var(--accent);
+    background: var(--ink);
+    color: #fff;
+  }
+
+  .header-cta:hover {
+    background: #303030;
+  }
+
+  /* At the top, over a dark opening, the bar turns dark with it; once scrolled it is always the light one. */
+  [data-tone="dark"][data-top]:not([data-menu-open]) .header-bar {
+    background: var(--night);
+    color: var(--night-ink);
+  }
+
+  [data-tone="dark"][data-top]:not([data-menu-open]) .header-cta {
+    background: #fff;
+    color: var(--ink);
+  }
+
+  [data-tone="dark"][data-top]:not([data-menu-open]) .header-cta:hover {
+    background: var(--wash);
+  }
+
+  /* At the top of the page the bar is clear, over the page's opening section. */
+  .site-header[data-top]:not([data-menu-open], [data-mobile-open]) .header-bar {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  [data-menu-open] .header-bar {
+    background: var(--surface);
+    box-shadow: 0 1px 0 var(--line);
+  }
+
+  [data-mobile-open] .header-bar {
+    background: var(--page);
+    color: var(--ink);
+    box-shadow: none;
+  }
+
+  .nav-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    height: 2.375rem;
+    padding: 0 0.85rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.9375rem;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+
+  .nav-trigger:hover,
+  .nav-trigger[aria-expanded="true"] {
+    background: var(--wash);
+  }
+
+  [data-tone="dark"][data-top]:not([data-menu-open]) .nav-trigger:hover {
+    background: rgb(255 255 255 / 0.08);
+  }
+
+  .nav-trigger[aria-current="page"],
+  .nav-trigger[data-current] {
+    box-shadow: inset 0 -2px 0 -0px var(--accent);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  }
+
+  .nav-chevron {
+    opacity: 0.55;
+    transition: transform 0.35s var(--ease-out-expo);
+  }
+
+  .nav-trigger[aria-expanded="true"] .nav-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* One panel for every menu: it takes the height of the menu it shows,
+     while the menus slide past each other inside. */
+  .mega {
+    pointer-events: none;
+  }
+
+  .mega-panel {
+    position: absolute;
+    inset: 0 0 auto;
+    height: var(--h, 22rem);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow:
+      0 1px 0 var(--line),
+      0 40px 60px -40px rgb(0 0 0 / 0.3);
+    opacity: 0;
+    transform: translateY(-0.4rem);
+    transition:
+      opacity 0.2s,
+      transform 0.35s var(--ease-out-expo),
+      height 0.5s var(--ease-out-expo);
+  }
+
+  [data-menu-open] .mega-panel {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .mega-content {
+    position: absolute;
+    inset: 0 0 auto;
+    opacity: 0;
+    translate: var(--shift, 0) 0;
+    transition:
+      opacity 0.25s,
+      translate 0.55s var(--ease-out-expo);
+  }
+
+  .mega-content[data-active] {
+    opacity: 1;
+    translate: 0 0;
+    transition:
+      opacity 0.3s 0.08s,
+      translate 0.55s var(--ease-out-expo);
+  }
+
+  .mega[data-instant] .mega-panel,
+  .mega[data-instant] .mega-content {
+    transition-property: opacity, transform;
+  }
+
+  .mega-link {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    transition: background-color 0.15s;
+  }
+
+  .mega-link:hover,
+  .mega-link:focus-visible,
+  .mega-link[aria-current="page"] {
+    background: var(--wash);
+  }
+
+  .mega-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-sm);
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--ink-soft);
+    transition:
+      background-color 0.2s,
+      color 0.2s,
+      box-shadow 0.2s;
+  }
+
+  .mega-link:hover .mega-icon,
+  .mega-link:focus-visible .mega-icon {
+    background: var(--ink);
+    color: var(--accent);
+    box-shadow: none;
+  }
+
+  .mega-feature {
+    display: block;
+  }
+
+  .mega-shot {
+    position: absolute;
+    inset: 0;
+    background: var(--surface);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+
+  .mega-shot img {
+    scale: 1.05;
+    transition: scale 0.7s var(--ease-out-expo);
+  }
+
+  .mega-shot[data-active] {
+    opacity: 1;
+  }
+
+  .mega-shot[data-active] img {
+    scale: 1;
+  }
+
+  /* Photos stay unloaded until their menu is first opened. */
+  .mega-content:not([data-seen]) .mega-shot {
+    display: none;
+  }
+
+  .mega-scrim {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity 0.3s,
+      visibility 0s 0.3s;
+  }
+
+  [data-menu-open] .mega-scrim {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s;
+  }
+
+  .mobile-nav {
+    overscroll-behavior: contain;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+
+  [data-mobile-open] .mobile-nav {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .mobile-group summary {
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .mobile-group summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mobile-plus {
+    transition: transform 0.35s var(--ease-out-expo);
+  }
+
+  .mobile-group[open] .mobile-plus {
+    transform: rotate(45deg);
+  }
+</style>
+
+<script>
+  const header = document.querySelector<HTMLElement>("[data-header]");
+
+  if (header) {
+    const triggers = [...header.querySelectorAll<HTMLButtonElement>("[data-menu-trigger]")];
+    const contents = [...header.querySelectorAll<HTMLElement>("[data-menu-panel]")];
+    const mega = header.querySelector<HTMLElement>("[data-mega]");
+    const panel = header.querySelector<HTMLElement>("[data-mega-panel]");
+    const scrim = header.querySelector<HTMLElement>("[data-menu-scrim]");
+    const mobileToggle = header.querySelector<HTMLButtonElement>("[data-mobile-toggle]");
+    const mobileNav = header.querySelector<HTMLElement>("[data-mobile-nav]");
+    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+    let current: string | null = null;
+    let hoverTimer = 0;
+
+    const place = (id: string) => {
+      const content = document.getElementById(id);
+      if (panel && content) panel.style.setProperty("--h", `${content.offsetHeight}px`);
+    };
+
+    const setMenu = (id: string | null, focusFirst = false) => {
+      const opening = current === null && id !== null;
+      current = id;
+      triggers.forEach((trigger) => trigger.setAttribute("aria-expanded", String(trigger.dataset.menuTrigger === id)));
+
+      if (id) {
+        const order = Number(document.getElementById(id)?.style.getPropertyValue("--order") ?? 0);
+        if (opening) mega?.setAttribute("data-instant", "");
+        contents.forEach((content) => {
+          const active = content.id === id;
+          const other = Number(content.style.getPropertyValue("--order"));
+          content.toggleAttribute("data-active", active);
+          if (active) content.setAttribute("data-seen", "");
+          content.inert = !active;
+          if (!active) content.style.setProperty("--shift", other < order ? "-3.5rem" : "3.5rem");
+        });
+        place(id);
+        if (opening) requestAnimationFrame(() => requestAnimationFrame(() => mega?.removeAttribute("data-instant")));
+      } else {
+        contents.forEach((content) => (content.inert = true));
+      }
+
+      header.toggleAttribute("data-menu-open", id !== null);
+      if (id && focusFirst) document.getElementById(id)?.querySelector<HTMLElement>("a")?.focus();
+    };
+
+    const closeMenu = (returnFocus = false) => {
+      const trigger = triggers.find((item) => item.dataset.menuTrigger === current);
+      setMenu(null);
+      if (returnFocus) trigger?.focus();
+    };
+
+    triggers.forEach((trigger) => {
+      const id = trigger.dataset.menuTrigger ?? null;
+      trigger.addEventListener("click", () => setMenu(current === id ? null : id));
+      trigger.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          setMenu(id, true);
+        }
+      });
+      trigger.addEventListener("pointerenter", () => {
+        if (!finePointer.matches) return;
+        window.clearTimeout(hoverTimer);
+        hoverTimer = window.setTimeout(() => setMenu(id), current ? 0 : 80);
+      });
+    });
+
+    /* Leaving the bar or the panel starts a short timer; the menu closes only
+       if the pointer is in neither when it runs. */
+    const bar = header.querySelector<HTMLElement>(".header-bar");
+    const hoverZones = [bar, panel].filter((el): el is HTMLElement => el !== null);
+    let pointer = { x: 0, y: 0 };
+    document.addEventListener("pointermove", (event) => (pointer = { x: event.clientX, y: event.clientY }), { passive: true });
+    const scheduleClose = () => {
+      if (!finePointer.matches || !current) return;
+      window.clearTimeout(hoverTimer);
+      hoverTimer = window.setTimeout(() => {
+        const inside = hoverZones.some((zone) => {
+          const box = zone.getBoundingClientRect();
+          return pointer.x >= box.left && pointer.x <= box.right && pointer.y >= box.top && pointer.y <= box.bottom;
+        });
+        if (!inside) closeMenu();
+      }, 220);
+    };
+    hoverZones.forEach((zone) => {
+      zone.addEventListener("pointerleave", scheduleClose);
+      zone.addEventListener("pointerenter", () => {
+        if (current) window.clearTimeout(hoverTimer);
+      });
+    });
+
+    bar?.querySelectorAll<HTMLAnchorElement>("a").forEach((link) => {
+      link.addEventListener("pointerenter", () => {
+        if (!finePointer.matches || !current) return;
+        window.clearTimeout(hoverTimer);
+        hoverTimer = window.setTimeout(() => closeMenu(), 90);
+      });
+      link.addEventListener("focus", () => {
+        if (current) closeMenu();
+      });
+    });
+
+    scrim?.addEventListener("click", () => closeMenu());
+
+    header.addEventListener("focusout", (event) => {
+      const next = event.relatedTarget as Node | null;
+      if (current && next && !header.contains(next)) closeMenu();
+    });
+
+    window.addEventListener("resize", () => {
+      if (current) place(current);
+    });
+
+    /* A link with a photo swaps it into the card on the right while hovered or focused;
+       the first one shows until then. */
+    contents.forEach((content) => {
+      const shots = [...content.querySelectorAll<HTMLElement>("[data-shot]")];
+      if (!shots.length) return;
+      const show = (href?: string) => shots.forEach((shot) => shot.toggleAttribute("data-active", shot.dataset.shot === href));
+      show(shots[0].dataset.shot);
+      content.querySelectorAll<HTMLAnchorElement>(".mega-link").forEach((link) => {
+        link.addEventListener("pointerenter", () => link.dataset.photo && show(link.dataset.photo));
+        link.addEventListener("focus", () => link.dataset.photo && show(link.dataset.photo));
+      });
+    });
+
+    const setMobile = (open: boolean) => {
+      /* The menu starts under the bar, which sits lower while the announcement above it is in view. */
+      if (open && mobileNav) mobileNav.style.top = `${Math.max(0, header.getBoundingClientRect().bottom)}px`;
+      header.toggleAttribute("data-mobile-open", open);
+      if (mobileNav) mobileNav.inert = !open;
+      mobileToggle?.setAttribute("aria-expanded", String(open));
+      mobileToggle?.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      mobileToggle?.querySelector("[data-icon-open]")?.classList.toggle("hidden", open);
+      mobileToggle?.querySelector("[data-icon-close]")?.classList.toggle("hidden", !open);
+      document.documentElement.style.overflow = open ? "hidden" : "";
+    };
+
+    mobileToggle?.addEventListener("click", () => setMobile(!header.hasAttribute("data-mobile-open")));
+
+    header.querySelectorAll("[data-menu-link]").forEach((link) =>
+      link.addEventListener("click", () => {
+        closeMenu();
+        setMobile(false);
+      }),
+    );
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      if (current) closeMenu(true);
+      if (header.hasAttribute("data-mobile-open")) {
+        setMobile(false);
+        mobileToggle?.focus();
+      }
+    });
+
+    window.matchMedia("(min-width: 64rem)").addEventListener("change", (event) => {
+      if (event.matches) setMobile(false);
+      else closeMenu();
+    });
+
+    /* The bar takes the tone of the section under it. Sections opt in with `data-tone="dark"`. */
+    const darkSections = [...document.querySelectorAll<HTMLElement>("main [data-tone='dark'], footer[data-tone='dark']")];
+    const setTone = () => {
+      const line = header.getBoundingClientRect().bottom - 1;
+      const dark = darkSections.some((section) => {
+        const box = section.getBoundingClientRect();
+        return box.top <= line && box.bottom > line;
+      });
+      header.dataset.tone = dark ? "dark" : "light";
+      header.toggleAttribute("data-top", window.scrollY < 8);
+    };
+    setTone();
+
+    /* Hidden while scrolling down, back as soon as the reader scrolls up or opens a menu. */
+    let lastY = window.scrollY;
+    const setHidden = () => {
+      const y = window.scrollY;
+      const dy = y - lastY;
+      lastY = y;
+      const open = current !== null || header.hasAttribute("data-mobile-open");
+      if (open || y < 160) header.removeAttribute("data-hidden");
+      else if (dy > 4) header.setAttribute("data-hidden", "");
+      else if (dy < -4) header.removeAttribute("data-hidden");
+    };
+    window.addEventListener("scroll", () => requestAnimationFrame(setHidden), { passive: true });
+    window.addEventListener("scroll", () => requestAnimationFrame(setTone), { passive: true });
+    window.addEventListener("resize", setTone, { passive: true });
+  }
+</script>

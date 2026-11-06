@@ -1,0 +1,70 @@
+---
+import Arrow from "@/components/ui/Arrow.astro";
+import Icon from "@/components/ui/Icon.astro";
+import { serviceHref, type Service } from "@/lib/catalog";
+
+/** Services in hairline-ruled columns, each ending on its headline outcome. */
+interface Props {
+  services: Service[];
+}
+
+const { services } = Astro.props;
+---
+
+<ul class="service-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+  {
+    services.map((service, index) => {
+      const [outcome] = service.data.outcomes;
+      return (
+        <li class="reveal" style={`--i:${index % 3}`}>
+          <a href={serviceHref(service)} class="service group flex h-full flex-col p-6 lg:p-8">
+            <span class="flex items-start justify-between">
+              <Icon name={service.data.icon} class="size-6 text-ink" />
+              <span class="text-faint opacity-0 transition-opacity group-hover:opacity-100">
+                <Arrow />
+              </span>
+            </span>
+            <span class="mt-16 block text-title lg:mt-24">{service.data.title}</span>
+            <span class="mt-2 mb-8 block min-h-[2lh] max-w-sm text-muted">{service.data.summary}</span>
+            {outcome && (
+              <span class="result mt-auto w-full">
+                <span class="font-semibold">{outcome.value}</span>
+                <span class="truncate font-normal">{outcome.label}</span>
+              </span>
+            )}
+          </a>
+        </li>
+      );
+    })
+  }
+</ul>
+
+<style>
+  .service-grid > li {
+    border-top: 1px solid var(--line);
+  }
+
+  @media (min-width: 40rem) {
+    .service-grid > li:nth-child(2n) {
+      border-left: 1px solid var(--line);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .service-grid > li:nth-child(2n) {
+      border-left: 0;
+    }
+
+    .service-grid > li:not(:nth-child(3n + 1)) {
+      border-left: 1px solid var(--line);
+    }
+  }
+
+  .service {
+    transition: background-color 0.3s;
+  }
+
+  .service:hover {
+    background: var(--wash);
+  }
+</style>

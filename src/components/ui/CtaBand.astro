@@ -1,0 +1,29 @@
+---
+import Arrow from "@/components/ui/Arrow.astro";
+import TwoTone from "@/components/ui/TwoTone.astro";
+import { home } from "@/config/home";
+import { siteConfig } from "@/config/site";
+
+/** The dark closing panel on most pages. */
+interface Props {
+  title?: string | string[];
+  lead?: string;
+}
+
+const { title = home.cta.title, lead = home.cta.lead } = Astro.props;
+const { primary } = siteConfig.actions;
+---
+
+<section class="on-night glass glass-5 relative overflow-hidden" data-tone="dark">
+  <div class="shell relative section text-center">
+    <h2 class="text-display-xl reveal mx-auto max-w-4xl"><TwoTone parts={title} /></h2>
+    <p class="reveal mx-auto mt-6 max-w-xl text-lead text-night-muted">{lead}</p>
+    <div class="reveal mt-10 flex flex-wrap justify-center gap-3">
+      <a href={primary.href} class="btn btn-light">
+        {primary.label}
+        <Arrow />
+      </a>
+      <a href="/contact/" class="btn btn-outline">Contact us</a>
+    </div>
+  </div>
+</section>

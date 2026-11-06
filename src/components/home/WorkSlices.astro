@@ -1,0 +1,282 @@
+---
+import { Image } from "astro:assets";
+import Arrow from "@/components/ui/Arrow.astro";
+import { home } from "@/config/home";
+import { caseHref, getIndustries, getWork } from "@/lib/catalog";
+
+const industries = new Map((await getIndustries()).map((industry) => [industry.id, industry]));
+const cases = (await getWork()).slice(0, 6);
+---
+
+<section class="section" data-slices>
+  <div class="shell">
+    <div class="flex flex-wrap items-end justify-between gap-x-10 gap-y-6">
+      <div class="min-w-0">
+        <h2 class="text-display-lg flex flex-wrap items-center gap-x-[0.3em] gap-y-2">
+          <span class="basis-full xl:basis-auto">{home.work.title}</span>
+          <span class="slice-chip relative inline-grid max-w-full overflow-hidden rounded-sm bg-wash px-[0.3em] py-[0.06em]" aria-live="polite">
+            {
+              cases.map((item, index) => (
+                <span class="chip-word" data-chip={index} data-active={index === 0 ? "" : undefined}>
+                  {industries.get(item.data.industry.id)?.data.title}
+                </span>
+              ))
+            }
+          </span>
+        </h2>
+        <p class="mt-5 max-w-xl text-lead text-muted">{home.work.lead}</p>
+      </div>
+    </div>
+
+    <ul class="slices mt-12 lg:mt-16" data-slice-list>
+      {
+        cases.map((item, index) => {
+          const [headline] = item.data.results;
+          const industry = industries.get(item.data.industry.id);
+          return (
+            <li class="slice" data-slice={index} data-active={index === 0 ? "" : undefined}>
+              <a href={caseHref(item)} class="slice-link group">
+                <Image src={item.data.cover} alt="" widths={[600, 900, 1200, 1600]} sizes="(min-width: 64rem) 52rem, 45rem" class="slice-img" />
+                <span class="slice-shade" />
+                <span class="slice-body">
+                  <span class="result bg-white! text-ink!">
+                    <span class="font-semibold">{headline.value}</span>
+                    <span class="text-muted">{headline.label}</span>
+                  </span>
+                  <span class="mt-5 block text-sm text-white/70">
+                    {industry?.data.title} · {item.data.client}
+                  </span>
+                  <span class="mt-2 block max-w-xl text-[clamp(1.25rem,1.1rem+0.7vw,1.75rem)] leading-tight tracking-[-0.025em] text-white">{item.data.title}</span>
+                  {item.data.quote && <span class="slice-quote mt-4 hidden max-w-lg text-[0.9375rem] leading-snug text-white/75 lg:block">“{item.data.quote.text}”</span>}
+                  <span class="mt-6 inline-flex items-center gap-2 text-sm font-medium text-white">
+                    <span class="link">Read the case</span>
+                    <Arrow />
+                  </span>
+                </span>
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+
+    <div class="mt-8 flex justify-end">
+      <a href="/work/" class="group inline-flex items-center gap-2 text-lg">
+        <span class="link">Explore all case studies</span>
+        <Arrow />
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .slice-chip {
+    grid-template-columns: minmax(0, 1fr);
+    transition: width 0.6s var(--ease-out-expo);
+  }
+
+  /* Sized to its own text, not the grid cell, so the chip can fit the active word. */
+  .chip-word {
+    grid-area: 1 / 1;
+    justify-self: start;
+    align-self: start;
+    width: max-content;
+    max-width: 100%;
+    opacity: 0;
+    transform: translateY(0.6em);
+    transition:
+      opacity 0.35s,
+      transform 0.6s var(--ease-out-expo);
+  }
+
+  .chip-word[data-active] {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Only the shown sector sizes the chip; the others would hold it at the longest one's height. */
+  .chip-word:not([data-active]) {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  /* Phones: a row of cards that scrolls sideways. */
+  .slices {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+  }
+
+  .slices::-webkit-scrollbar {
+    display: none;
+  }
+
+  .slice {
+    position: relative;
+    flex: 0 0 85%;
+    scroll-snap-align: center;
+  }
+
+  .slice-link {
+    position: relative;
+    display: block;
+    height: 30rem;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--sunken);
+  }
+
+  .slice-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 1.2s var(--ease-out-expo);
+  }
+
+  .slice-shade {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to top, rgb(10 10 10 / 0.92), rgb(10 10 10 / 0.78) 35%, rgb(10 10 10 / 0.4) 62%, rgb(10 10 10 / 0.1)),
+      linear-gradient(to right, rgb(10 10 10 / 0.45), transparent 70%);
+    transition: opacity 0.5s;
+  }
+
+  .slice-body {
+    position: absolute;
+    inset: auto 0 0;
+    padding: 1.5rem;
+  }
+
+  /* Wide screens: slices side by side; the active one opens out. */
+  @media (min-width: 64rem) {
+    .slices {
+      gap: 0.625rem;
+      overflow: visible;
+      margin-inline: 0;
+      padding-inline: 0;
+    }
+
+    .slice {
+      flex: 1 1 0;
+      min-width: 0;
+      transition: flex-grow 0.8s var(--ease-out-expo);
+    }
+
+    .slice[data-active] {
+      flex-grow: 6.5;
+    }
+
+    .slice-link {
+      height: 34rem;
+    }
+
+    .slice-body {
+      padding: 2rem;
+      width: min(100vw - 2 * var(--gutter), 46rem);
+      opacity: 0;
+      transform: translateY(1rem);
+      transition:
+        opacity 0.3s,
+        transform 0.6s var(--ease-out-expo);
+      pointer-events: none;
+    }
+
+    .slice[data-active] .slice-body {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.25s;
+    }
+
+    .slice:not([data-active]) .slice-shade {
+      opacity: 0.35;
+    }
+
+    .slice:not([data-active]) .slice-img {
+      transform: scale(1.08);
+    }
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>("[data-slices]");
+
+  if (root) {
+    const slices = [...root.querySelectorAll<HTMLElement>("[data-slice]")];
+    const words = [...root.querySelectorAll<HTMLElement>("[data-chip]")];
+    const chip = root.querySelector<HTMLElement>(".slice-chip");
+    const wide = window.matchMedia("(min-width: 64rem)");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let active = 0;
+    let timer = 0;
+    let paused = false;
+
+    const fitChip = () => {
+      if (!chip || !words[active]) return;
+      const style = getComputedStyle(chip);
+      const pad = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+      const room = Math.floor(chip.parentElement!.clientWidth - pad);
+      /* Each word keeps its final width, so it never wraps inside the chip while the chip's width animates. */
+      const heights = words.map((word) => {
+        word.style.maxWidth = "none";
+        word.style.width = "";
+        word.style.width = `${Math.max(0, Math.min(Math.ceil(word.getBoundingClientRect().width), room))}px`;
+        return word.getBoundingClientRect().height;
+      });
+      chip.style.width = `${Math.ceil(words[active].getBoundingClientRect().width + pad)}px`;
+      /* Reserve the tallest sector's height, so a two-line sector never moves the slices. */
+      chip.style.marginBottom = `${Math.max(...heights) - heights[active]}px`;
+    };
+
+    const show = (index: number) => {
+      active = (index + slices.length) % slices.length;
+      slices.forEach((slice, i) => slice.toggleAttribute("data-active", i === active));
+      words.forEach((word, i) => word.toggleAttribute("data-active", i === active));
+      fitChip();
+    };
+
+    const schedule = () => {
+      window.clearInterval(timer);
+      if (reduce.matches) return;
+      timer = window.setInterval(() => {
+        if (!paused && !document.hidden && wide.matches) show(active + 1);
+      }, 6000);
+    };
+
+    slices.forEach((slice, index) => {
+      const link = slice.querySelector("a");
+      slice.addEventListener("pointerenter", () => wide.matches && show(index));
+      link?.addEventListener("focus", () => show(index));
+    });
+
+    /* Phones scroll the cards; the heading follows the one in view. */
+    const list = root.querySelector<HTMLElement>("[data-slice-list]");
+    list?.addEventListener(
+      "scroll",
+      () => {
+        if (wide.matches) return;
+        const center = list.scrollLeft + list.clientWidth / 2;
+        const index = slices.findIndex((slice) => slice.offsetLeft + slice.offsetWidth > center);
+        if (index !== -1 && index !== active) show(index);
+      },
+      { passive: true },
+    );
+
+    root.addEventListener("pointerenter", () => (paused = true));
+    root.addEventListener("pointerleave", () => (paused = false));
+    root.addEventListener("focusin", () => (paused = true));
+    root.addEventListener("focusout", () => (paused = false));
+
+    show(0);
+    schedule();
+    window.addEventListener("resize", fitChip, { passive: true });
+    document.fonts?.ready.then(fitChip);
+  }
+</script>

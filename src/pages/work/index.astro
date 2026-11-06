@@ -1,0 +1,131 @@
+---
+import CaseCard from "@/components/work/CaseCard.astro";
+import CtaBand from "@/components/ui/CtaBand.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getIndustries, getServices, getWork } from "@/lib/catalog";
+
+const cases = await getWork();
+const industries = (await getIndustries()).filter((industry) => cases.some((item) => item.data.industry.id === industry.id));
+const services = (await getServices()).filter((service) => cases.some((item) => item.data.services.some((ref) => ref.id === service.id)));
+const industryById = new Map(industries.map((industry) => [industry.id, industry]));
+---
+
+<BaseLayout title="Our work" description="Case studies from Vertex engagements in every sector we serve. Clients stay anonymous; the results are theirs, measured by their own finance teams.">
+  <PageHeader
+    eyebrow="Our work"
+    title={["Results, measured", "by our clients"]}
+    lead="Our clients stay anonymous, so these stories name sectors rather than companies. Every figure was signed off by the client's own finance team."
+    crumbs={[{ label: "Our work", href: "/work/" }]}
+  />
+
+  <section class="section pt-12! lg:pt-16!" data-work-filter>
+    <div class="shell">
+      <div class="border-b border-line pb-6">
+        <div class="-mx-(--gutter) flex gap-1.5 overflow-x-auto px-(--gutter) [scrollbar-width:none] xl:mx-0 xl:flex-wrap xl:px-0" role="group" aria-label="Filter by industry">
+          <button type="button" class="filter" aria-pressed="true" data-industry="">All industries</button>
+          {
+            industries.map((industry) => (
+              <button type="button" class="filter" aria-pressed="false" data-industry={industry.id}>
+                {industry.data.title}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+        <p class="text-sm text-muted" aria-live="polite" data-count>{cases.length} case studies</p>
+        <div class="flex w-full items-center gap-3 sm:w-auto">
+          <label for="service-filter" class="shrink-0 text-sm text-muted">Service</label>
+          <select id="service-filter" class="field select min-h-10! py-2! text-sm sm:w-64" data-service>
+            <option value="">All services</option>
+            {services.map((service) => <option value={service.id}>{service.data.title}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <ul class="mt-8 grid gap-x-6 gap-y-14 md:grid-cols-2 lg:grid-cols-3">
+        {
+          cases.map((item) => (
+            <li data-case data-industry={item.data.industry.id} data-services={item.data.services.map((ref) => ref.id).join(" ")}>
+              <CaseCard item={item} industry={industryById.get(item.data.industry.id)} headingLevel="h2" />
+            </li>
+          ))
+        }
+      </ul>
+      <p class="mt-10 hidden rounded-(--radius) bg-wash p-8 text-center text-muted" data-empty>
+        No case studies match both filters yet. <button type="button" class="link-quiet text-ink" data-reset>Clear the filters</button>
+      </p>
+    </div>
+  </section>
+
+  <CtaBand />
+</BaseLayout>
+
+<style>
+  .filter {
+    flex: none;
+    min-height: 2.25rem;
+    padding: 0 0.9rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+    box-shadow: inset 0 0 0 1px var(--line);
+    transition:
+      background-color 0.2s,
+      color 0.2s,
+      box-shadow 0.2s;
+  }
+
+  .filter:hover {
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+
+  .filter[aria-pressed="true"] {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: none;
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>("[data-work-filter]");
+
+  if (root) {
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>("[data-industry]:is(button)")];
+    const select = root.querySelector<HTMLSelectElement>("[data-service]");
+    const items = [...root.querySelectorAll<HTMLElement>("[data-case]")];
+    const count = root.querySelector<HTMLElement>("[data-count]");
+    const empty = root.querySelector<HTMLElement>("[data-empty]");
+    let industry = "";
+
+    const apply = () => {
+      const service = select?.value ?? "";
+      let shown = 0;
+      items.forEach((item) => {
+        const match =
+          (!industry || item.dataset.industry === industry) &&
+          (!service || (item.dataset.services ?? "").split(" ").includes(service));
+        item.hidden = !match;
+        if (match) shown += 1;
+      });
+      buttons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.industry === industry)));
+      if (count) count.textContent = `${shown} case ${shown === 1 ? "study" : "studies"}`;
+      empty?.classList.toggle("hidden", shown > 0);
+    };
+
+    buttons.forEach((button) =>
+      button.addEventListener("click", () => {
+        industry = button.dataset.industry ?? "";
+        apply();
+      }),
+    );
+    select?.addEventListener("change", apply);
+    root.querySelector("[data-reset]")?.addEventListener("click", () => {
+      industry = "";
+      if (select) select.value = "";
+      apply();
+    });
+  }
+</script>

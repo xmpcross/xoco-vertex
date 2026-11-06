@@ -1,0 +1,48 @@
+---
+import Arrow from "@/components/ui/Arrow.astro";
+import { home } from "@/config/home";
+import { siteConfig } from "@/config/site";
+
+const { hero } = home;
+const { primary, secondary } = siteConfig.actions;
+---
+
+<section class="hero on-night glass relative flex flex-col overflow-hidden" data-tone="dark">
+  <div class="shell flex flex-1 flex-col justify-end pt-24 pb-14 lg:pb-16">
+    <p class="eyebrow rise">{hero.eyebrow}</p>
+    <h1 class="hero-title rise mt-6" style="--i:1">
+      <span class="block">{hero.title[0]}</span>
+      <span class="dim block">{hero.title[1]}</span>
+    </h1>
+
+    <div class="rise mt-14 grid gap-8 border-t border-night-line pt-8 lg:mt-20 lg:grid-cols-12 lg:items-end lg:gap-10" style="--i:2">
+      <p class="max-w-xl text-lead text-night-muted lg:col-span-6">{hero.lead}</p>
+      <div class="flex flex-wrap gap-3 lg:col-span-6 lg:justify-end">
+        <a href={primary.href} class="btn btn-light">
+          {primary.label}
+          <Arrow />
+        </a>
+        <a href={secondary.href} class="btn btn-outline">{secondary.label}</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Fills the first screen; the announcement bar above it takes its 2.5rem when shown. */
+  .hero {
+    min-height: 100svh;
+  }
+
+  :global(body:has(.announcement)) .hero {
+    min-height: calc(100svh - 2.5rem);
+  }
+
+  .hero-title {
+    font-size: clamp(3rem, 1.6rem + 6vw, 7rem);
+    font-weight: 400;
+    line-height: 0.98;
+    letter-spacing: -0.05em;
+    text-wrap: balance;
+  }
+</style>

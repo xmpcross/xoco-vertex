@@ -1,0 +1,130 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import Wordmark from "@/components/ui/Wordmark.astro";
+import { offices } from "@/config/offices";
+import { footerNavigation, legalNavigation, siteConfig } from "@/config/site";
+import { socialIcon } from "@/lib/socials";
+
+const { newsletter, legal } = siteConfig;
+const live = newsletter.enabled && newsletter.action !== "";
+const year = new Date().getFullYear();
+---
+
+<footer class="on-night" data-tone="dark">
+  <div class="shell">
+    <div class="grid gap-12 border-b border-night-line pt-20 pb-14 lg:grid-cols-12 lg:gap-10 lg:pt-24">
+      <div class="lg:col-span-6">
+        <a href="/" class="inline-flex" aria-label={`${siteConfig.name} home`} data-logo-menu-trigger>
+          <Wordmark class="h-9 sm:h-11" />
+        </a>
+        <p class="mt-6 max-w-sm text-lg leading-snug tracking-[-0.015em] text-night-muted">{siteConfig.description.split(". ")[0]}.</p>
+      </div>
+
+      <div class="lg:col-span-5 lg:col-start-8">
+        <p class="text-title">{newsletter.title}</p>
+        <p class="mt-2 max-w-sm text-night-muted">{newsletter.description}</p>
+        <form
+          class="mt-6 flex max-w-md items-center gap-1.5 rounded-sm bg-night-raised p-1.5 ring-1 ring-night-line focus-within:ring-night-muted"
+          action={live ? newsletter.action : undefined}
+          method={newsletter.method}
+          aria-describedby={live ? undefined : "newsletter-note"}
+        >
+          <label for="footer-email" class="sr-only">Email address</label>
+          <input
+            id="footer-email"
+            name={newsletter.emailFieldName}
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="you@company.com"
+            disabled={!live}
+            class="h-10 min-w-0 flex-1 bg-transparent px-3 outline-none placeholder:text-night-muted disabled:cursor-not-allowed"
+          />
+          <button type="submit" class="btn btn-light btn-sm" disabled={!live}>Subscribe</button>
+        </form>
+        {
+          !live && (
+            <p id="newsletter-note" class="label mt-3">
+              Sign-up is off in this preview. Connect a form endpoint in the site config to turn it on.
+            </p>
+          )
+        }
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-x-6 gap-y-12 border-b border-night-line py-14 sm:grid-cols-3 lg:grid-cols-5">
+      {
+        footerNavigation.map((column) => (
+          <nav aria-label={column.title}>
+            <p class="text-[0.9375rem]">{column.title}</p>
+            <ul class="mt-5 grid gap-3">
+              {column.links.map((link) => (
+                <li>
+                  <a href={link.href} class="text-[0.9375rem] text-night-muted transition-colors hover:text-night-ink">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))
+      }
+      <div>
+        <p class="text-[0.9375rem]">Offices</p>
+        <ul class="mt-5 grid gap-3">
+          {
+            offices.map((office) => (
+              <li class="flex items-baseline justify-between gap-3 text-[0.9375rem] text-night-muted">
+                <a href="/contact/#offices" class="transition-colors hover:text-night-ink">
+                  {office.city}
+                </a>
+                <span class="text-xs opacity-70" data-local-time={office.timeZone} />
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-6 py-8 text-sm text-night-muted md:flex-row md:items-center md:justify-between">
+      <p>&copy; {year} {siteConfig.legalName}</p>
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+        {
+          legalNavigation.map((link) => (
+            <a href={link.href} class="transition-colors hover:text-night-ink">
+              {link.label}
+            </a>
+          ))
+        }
+        <ul class="flex items-center gap-1">
+          {
+            siteConfig.socials.map((social) => (
+              <li>
+                <a href={social.href} class="grid size-9 place-items-center rounded-sm transition-colors hover:bg-night-raised hover:text-night-ink" aria-label={social.label} rel="noopener noreferrer" target="_blank">
+                  <Icon name={socialIcon(social.label)} class="size-4" />
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+    {legal && <p class="border-t border-night-line py-6 text-xs text-night-muted/70">{legal}</p>}
+  </div>
+</footer>
+
+<script>
+  /* Local time beside each office, refreshed every minute. */
+  const cells = [...document.querySelectorAll<HTMLElement>("[data-local-time]")];
+  const formats = new Map<string, Intl.DateTimeFormat>();
+  const tick = () =>
+    cells.forEach((cell) => {
+      const zone = cell.dataset.localTime!;
+      if (!formats.has(zone)) formats.set(zone, new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", timeZone: zone }));
+      cell.textContent = formats.get(zone)!.format(new Date());
+    });
+  if (cells.length) {
+    tick();
+    window.setInterval(tick, 30_000);
+  }
+</script>

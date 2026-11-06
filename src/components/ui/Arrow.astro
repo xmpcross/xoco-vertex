@@ -1,0 +1,17 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+
+interface Props {
+  /** Points up and to the right, for links that leave the page or open a panel. */
+  out?: boolean;
+  class?: string;
+}
+
+const { out = false, class: className } = Astro.props;
+const name = out ? "arrow-up-right" : "arrow-right";
+---
+
+<span class:list={["arrow", out && "arrow-out", className]} aria-hidden="true">
+  <Icon name={name} class="" />
+  <Icon name={name} class="" />
+</span>

@@ -1,0 +1,59 @@
+---
+import type { ImageMetadata } from "astro";
+import { Image } from "astro:assets";
+import { offices } from "@/config/offices";
+
+/* Photos are matched to offices by id: `src/assets/images/offices/<id>.jpg`. */
+const photos = import.meta.glob<{ default: ImageMetadata }>("/src/assets/images/offices/*.jpg", { eager: true });
+const photoFor = (id: string) => photos[`/src/assets/images/offices/${id}.jpg`]?.default;
+---
+
+<ul class="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+  {
+    offices.map((office, index) => {
+      const photo = photoFor(office.id);
+      return (
+        <li class="reveal" style={`--i:${index}`}>
+          <div class="media relative aspect-4/5">
+            {photo && <Image src={photo} alt={`${office.city} skyline`} widths={[600, 900, 1200, 1600]} sizes="(min-width: 64rem) 36rem, (min-width: 40rem) 85vw, 173vw" class="size-full object-cover" />}
+            <span class="absolute top-3 left-3 inline-flex items-center gap-2 rounded-sm bg-white px-2.5 py-1.5 text-xs text-ink">
+              <span class="size-1.5 rounded-full bg-accent-ink" />
+              <span data-office-time={office.timeZone}>
+                {office.city}
+              </span>
+            </span>
+            {office.hq && <span class="absolute top-3 right-3 rounded-sm bg-ink px-2 py-1.5 text-xs text-white">Headquarters</span>}
+          </div>
+          <h3 class="mt-5 text-title">{office.city}</h3>
+          <address class="mt-2 text-[0.9375rem] leading-relaxed text-muted not-italic">
+            {office.address.map((line) => (
+              <span class="block">{line}</span>
+            ))}
+          </address>
+          <p class="mt-3 grid gap-1 text-[0.9375rem]">
+            <a href={`tel:${office.phone.replace(/\s/g, "")}`} class="link-quiet w-fit">
+              {office.phone}
+            </a>
+            <a href={`mailto:${office.email}`} class="link-quiet w-fit">
+              {office.email}
+            </a>
+          </p>
+        </li>
+      );
+    })
+  }
+</ul>
+
+<script>
+  /* Each badge shows the office's local time once the page runs in a browser. */
+  const badges = [...document.querySelectorAll<HTMLElement>("[data-office-time]")];
+  const tick = () =>
+    badges.forEach((badge) => {
+      const time = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", timeZone: badge.dataset.officeTime }).format(new Date());
+      badge.textContent = `${time} local time`;
+    });
+  if (badges.length) {
+    tick();
+    window.setInterval(tick, 30_000);
+  }
+</script>

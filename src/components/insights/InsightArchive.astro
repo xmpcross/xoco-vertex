@@ -1,0 +1,76 @@
+---
+import { Image } from "astro:assets";
+import InsightCard from "@/components/insights/InsightCard.astro";
+import InsightsHeader from "@/components/insights/InsightsHeader.astro";
+import Pagination from "@/components/insights/Pagination.astro";
+import Arrow from "@/components/ui/Arrow.astro";
+import CtaBand from "@/components/ui/CtaBand.astro";
+import type { InsightType } from "@/config/insights";
+import { formatDate, joinNames } from "@/lib/format";
+import { authorsOf, insightHref, typeOne, type Insight } from "@/lib/insights";
+import type { Person } from "@/lib/people";
+
+/** One page of an insights archive: the lead entry on page one, then a grid. */
+interface Props {
+  entries: Insight[];
+  lead?: Insight;
+  people: Map<string, Person>;
+  current: number;
+  last: number;
+  base: string;
+  type?: InsightType;
+}
+
+const { entries, lead, people, current, last, base, type } = Astro.props;
+const byline = (entry: Insight) => joinNames(authorsOf(entry, people).map((person) => person.data.name));
+---
+
+<InsightsHeader current={type} />
+
+<section class="section pt-14! lg:pt-20!">
+  <div class="shell">
+    {
+      lead && (
+        <a href={insightHref(lead)} class="group mb-16 grid gap-8 border-b border-line pb-16 lg:mb-20 lg:grid-cols-12 lg:gap-10 lg:pb-20">
+          {lead.data.cover && (
+            <span class="media block aspect-16/10 lg:col-span-7">
+              <Image src={lead.data.cover} alt="" widths={[640, 960, 1400]} sizes="(min-width: 82rem) 48rem, 92vw" loading="eager" class="size-full object-cover transition-transform duration-1000 ease-(--ease-out-expo) group-hover:scale-[1.04]" />
+            </span>
+          )}
+          <span class="flex flex-col lg:col-span-5 lg:py-2">
+            <span class="eyebrow">
+              Featured {typeOne(lead.data.type).toLowerCase()}
+            </span>
+            <span class="text-display-md mt-5 block">
+              <span class="link">{lead.data.title}</span>
+            </span>
+            <span class="mt-4 block text-lead text-muted">{lead.data.description}</span>
+            <span class="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8 text-sm text-muted">
+              <span>
+                {byline(lead)} · {formatDate(lead.data.date)}
+              </span>
+              <span class="inline-flex items-center gap-2 font-medium text-ink">
+                Read
+                <Arrow />
+              </span>
+            </span>
+          </span>
+        </a>
+      )
+    }
+
+    <ul class="grid gap-x-6 gap-y-14 md:grid-cols-2 lg:grid-cols-3">
+      {
+        entries.map((entry, index) => (
+          <li class="reveal" style={`--i:${index % 3}`}>
+            <InsightCard entry={entry} byline={byline(entry)} headingLevel="h2" />
+          </li>
+        ))
+      }
+    </ul>
+
+    <Pagination current={current} last={last} base={base} />
+  </div>
+</section>
+
+<CtaBand />

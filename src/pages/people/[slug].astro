@@ -1,0 +1,173 @@
+---
+import { Image } from "astro:assets";
+import { render } from "astro:content";
+import InsightCard from "@/components/insights/InsightCard.astro";
+import CaseCard from "@/components/work/CaseCard.astro";
+import CtaBand from "@/components/ui/CtaBand.astro";
+import Icon from "@/components/ui/Icon.astro";
+import SectionHead from "@/components/ui/SectionHead.astro";
+import { officeById } from "@/config/offices";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getIndustries, getServices, getWork, industryHref, serviceHref } from "@/lib/catalog";
+import { getInsights, insightsBy } from "@/lib/insights";
+import { getPeople, type Person } from "@/lib/people";
+import { personSchema } from "@/lib/schema";
+
+export async function getStaticPaths() {
+  const people = await getPeople();
+  return people.map((person) => ({ params: { slug: person.id }, props: { person } }));
+}
+
+interface Props {
+  person: Person;
+}
+
+const { person } = Astro.props;
+const { data } = person;
+const { Content } = await render(person);
+const office = officeById(data.office);
+const industries = await getIndustries();
+const industryById = new Map(industries.map((industry) => [industry.id, industry]));
+const sectors = industries.filter((industry) => data.industries.some((ref) => ref.id === industry.id));
+const services = (await getServices()).filter((service) => data.services.some((ref) => ref.id === service.id));
+const cases = (await getWork()).filter((item) => item.data.team.some((ref) => ref.id === person.id)).slice(0, 3);
+const writing = insightsBy(await getInsights(), person.id).slice(0, 3);
+---
+
+<BaseLayout title={data.name} description={`${data.name}, ${data.role} at Vertex. ${data.focus}`} image={data.portrait} imageAlt={data.name} structuredData={personSchema(person)}>
+  <section class="on-night glass glass-4 relative" data-tone="dark">
+    <div class="shell grid gap-12 pt-14 pb-20 lg:grid-cols-12 lg:gap-10 lg:pt-20 lg:pb-24">
+      <div class="flex flex-col lg:col-span-7">
+        <nav aria-label="Breadcrumb" class="rise text-sm text-night-muted">
+          <ol class="flex flex-wrap items-center gap-2">
+            <li><a href="/" class="hover:text-night-ink">Home</a></li>
+            <li aria-hidden="true">/</li>
+            <li><a href="/people/" class="hover:text-night-ink">People</a></li>
+          </ol>
+        </nav>
+        <p class="eyebrow rise mt-10" style="--i:1">{data.group === "Senior advisors" ? "Senior advisor" : data.role}</p>
+        <h1 class="text-display-xl rise mt-5" style="--i:1">{data.name}</h1>
+        <p class="rise mt-5 max-w-xl text-lead text-night-muted" style="--i:2">{data.focus}</p>
+
+        <dl class="rise mt-auto grid gap-6 pt-12 text-[0.9375rem] sm:grid-cols-3" style="--i:3">
+          <div>
+            <dt class="text-sm text-night-muted">Role</dt>
+            <dd class="mt-1">{data.role}</dd>
+          </div>
+          {
+            office && (
+              <div>
+                <dt class="text-sm text-night-muted">Office</dt>
+                <dd class="mt-1">{office.city}</dd>
+              </div>
+            )
+          }
+          <div>
+            <dt class="text-sm text-night-muted">Contact</dt>
+            <dd class="mt-1 flex items-center gap-2">
+              {
+                data.email && (
+                  <a href={`mailto:${data.email}`} class="grid size-9 place-items-center rounded-sm ring-1 ring-white/15 transition hover:bg-white hover:text-ink" aria-label={`Email ${data.name}`}>
+                    <Icon name="mail" class="size-4" />
+                  </a>
+                )
+              }
+              {
+                data.linkedin && (
+                  <a href={data.linkedin} class="grid size-9 place-items-center rounded-sm ring-1 ring-white/15 transition hover:bg-white hover:text-ink" aria-label={`${data.name} on LinkedIn`} rel="noopener noreferrer" target="_blank">
+                    <Icon name="social-linkedin" class="size-4" />
+                  </a>
+                )
+              }
+            </dd>
+          </div>
+        </dl>
+      </div>
+      <div class="rise lg:col-span-4 lg:col-start-9" style="--i:2">
+        <div class="media aspect-4/5 rounded-lg">
+          <Image src={data.portrait} alt={`Portrait of ${data.name}`} widths={[400, 640, 900]} sizes="(min-width: 64rem) 26rem, 92vw" loading="eager" class="size-full object-cover" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="shell grid gap-12 lg:grid-cols-12 lg:gap-10">
+      <div class="prose lg:col-span-7">
+        <Content />
+      </div>
+      <aside class="grid content-start gap-8 lg:col-span-4 lg:col-start-9">
+        {
+          services.length > 0 && (
+            <div>
+              <p class="text-sm text-muted">Services</p>
+              <ul class="mt-3 grid gap-2">
+                {services.map((service) => (
+                  <li>
+                    <a href={serviceHref(service)} class="flex items-center gap-3 rounded-sm bg-wash p-3 transition-colors hover:bg-sunken">
+                      <Icon name={service.data.icon} class="size-4" />
+                      {service.data.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        }
+        {
+          sectors.length > 0 && (
+            <div>
+              <p class="text-sm text-muted">Industries</p>
+              <ul class="mt-3 grid gap-2">
+                {sectors.map((industry) => (
+                  <li>
+                    <a href={industryHref(industry)} class="flex items-center gap-3 rounded-sm bg-wash p-3 transition-colors hover:bg-sunken">
+                      <Icon name={industry.data.icon} class="size-4" />
+                      {industry.data.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        }
+      </aside>
+    </div>
+  </section>
+
+  {
+    cases.length > 0 && (
+      <section class="section bg-wash">
+        <div class="shell">
+          <SectionHead eyebrow="Selected work" title={["Engagements", `${data.name.split(" ")[0]} has led`]} />
+          <ul class="mt-12 grid gap-x-6 gap-y-14 md:grid-cols-3 lg:mt-16">
+            {cases.map((item, index) => (
+              <li class="reveal" style={`--i:${index}`}>
+                <CaseCard item={item} industry={industryById.get(item.data.industry.id)} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    writing.length > 0 && (
+      <section class="section">
+        <div class="shell">
+          <SectionHead eyebrow="Insights" title={["Writing", `by ${data.name.split(" ")[0]}`]} link={{ label: "All insights", href: "/insights/" }} />
+          <ul class="mt-12 grid gap-x-6 gap-y-14 md:grid-cols-3 lg:mt-16">
+            {writing.map((entry, index) => (
+              <li class="reveal" style={`--i:${index}`}>
+                <InsightCard entry={entry} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  <CtaBand title={["Talk to", data.name]} lead={`Tell us what you are weighing and ${data.name.split(" ")[0]} or a colleague in ${office?.city ?? "your region"} will reply within two working days.`} />
+</BaseLayout>

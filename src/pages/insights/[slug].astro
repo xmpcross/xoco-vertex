@@ -1,0 +1,270 @@
+---
+import { getImage, Image } from "astro:assets";
+import { render } from "astro:content";
+import ShareSheet from "@/components/chrome/ShareSheet.astro";
+import InsightCard from "@/components/insights/InsightCard.astro";
+import Arrow from "@/components/ui/Arrow.astro";
+import CtaBand from "@/components/ui/CtaBand.astro";
+import Icon from "@/components/ui/Icon.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import SectionHead from "@/components/ui/SectionHead.astro";
+import { offices } from "@/config/offices";
+import { siteConfig } from "@/config/site";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { eventParts, formatDate, formatEventTime, joinNames } from "@/lib/format";
+import { authorsOf, getInsights, insightHref, readingTime, relatedEntries, typeHref, typeLabel, typeOne, type Insight } from "@/lib/insights";
+import { getPeople, peopleById, personHref } from "@/lib/people";
+import { insightSchema } from "@/lib/schema";
+
+export async function getStaticPaths() {
+  const entries = await getInsights();
+  return entries.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+interface Props {
+  entry: Insight;
+}
+
+const { entry } = Astro.props;
+const { data } = entry;
+const { Content, headings } = await render(entry);
+const people = peopleById(await getPeople());
+const authors = authorsOf(entry, people);
+const related = relatedEntries(entry, await getInsights());
+const url = new URL(insightHref(entry), siteConfig.siteUrl).toString();
+const share = data.cover ? await getImage({ src: data.cover, width: 1200, height: 630, fit: "cover", format: "png" }) : undefined;
+const toc = headings.filter((heading) => heading.depth === 2);
+
+const { event, report } = data;
+const zone = event ? (offices.find((office) => office.city === event.city)?.timeZone ?? "UTC") : "UTC";
+const when = event ? eventParts(event.start, zone) : undefined;
+const past = event ? event.start.getTime() < Date.now() : false;
+const meta = event ? `${formatEventTime(event.start, zone)} · ${event.format}` : `${formatDate(data.date)} · ${readingTime(entry.body)} min read`;
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  image={data.cover}
+  imageAlt={data.coverAlt}
+  type="article"
+  structuredData={insightSchema(entry, authors, share?.src)}
+>
+  <div class="progress fixed inset-x-0 top-0 z-[60] h-0.5 origin-left bg-accent" aria-hidden="true"></div>
+
+  <PageHeader
+    glass={4}
+    eyebrow={typeOne(data.type)}
+    title={data.title}
+    lead={data.description}
+    crumbs={[
+      { label: "Insights", href: "/insights/" },
+      { label: typeLabel(data.type), href: typeHref(data.type) },
+    ]}
+    class:list={[data.cover && "pb-24 lg:pb-32"]}
+  >
+    <div class="rise mt-10 flex flex-wrap items-center gap-x-6 gap-y-4 border-t border-night-line pt-6" style="--i:3">
+      <div class="flex items-center gap-3">
+        <span class="flex -space-x-2">
+          {authors.map((person) => <Image src={person.data.portrait} alt="" width={80} height={80} class="size-9 rounded-full object-cover ring-2 ring-night" />)}
+        </span>
+        <span class="text-sm">
+          <span class="block">{joinNames(authors.map((person) => person.data.name))}</span>
+          <span class="block text-night-muted">{meta}</span>
+        </span>
+      </div>
+      <button type="button" class="ml-auto inline-flex items-center gap-2 rounded-sm px-3 py-2 text-sm text-white ring-1 ring-white/30 transition hover:bg-white/10 hover:ring-white/60" data-share-open>
+        <Icon name="social-share" class="size-3.5" />
+        Share
+      </button>
+    </div>
+  </PageHeader>
+
+  {
+    data.cover && (
+      <div class="shell relative -mt-16 lg:-mt-24">
+        <figure class="rise" style="--i:4">
+          <div class="media aspect-video rounded-lg">
+            <Image src={data.cover} alt={data.coverAlt ?? ""} widths={[640, 960, 1400, 1800]} sizes="(min-width: 82rem) 82rem, 92vw" loading="eager" class="size-full object-cover" />
+          </div>
+          {data.coverCredit && (
+            <figcaption class="mt-3 text-xs text-muted">
+              Photo:{" "}
+              <a href={data.coverCredit.url} class="link-quiet" rel="noopener noreferrer" target="_blank">
+                {data.coverCredit.name}
+              </a>
+            </figcaption>
+          )}
+        </figure>
+      </div>
+    )
+  }
+
+  <section class="section">
+    <div class="shell grid gap-14 lg:grid-cols-12 lg:gap-10">
+      <aside class="lg:col-span-4">
+        <div class="grid gap-4 lg:sticky lg:top-[calc(var(--header-h)+2rem)]">
+          {
+            event && when && (
+              <div class="on-night rounded-lg p-6">
+                <div class="flex items-start gap-4">
+                  <span class="grid min-w-16 rounded-sm bg-white px-3 py-2.5 text-center text-ink">
+                    <span class="text-2xl leading-none font-medium">{when.day}</span>
+                    <span class="mt-1 text-xs font-medium tracking-[0.08em] uppercase">{when.month}</span>
+                  </span>
+                  <span class="text-sm leading-relaxed">
+                    <span class="block">{formatEventTime(event.start, zone)}</span>
+                    <span class="block text-night-muted">{event.venue}</span>
+                    <span class="block text-night-muted">{event.format === "Online" ? "Online" : event.city}</span>
+                  </span>
+                </div>
+                {event.registerUrl && !past ? (
+                  <a href={event.registerUrl} class="btn btn-light mt-6 w-full justify-between" rel="noopener noreferrer" target="_blank">
+                    Register your place
+                    <Arrow />
+                  </a>
+                ) : (
+                  <p class="mt-6 text-sm text-night-muted">This event has taken place.</p>
+                )}
+              </div>
+            )
+          }
+          {
+            report && (
+              <div class="on-night rounded-lg p-6">
+                <p class="flex items-center gap-2 text-sm text-night-muted">
+                  <Icon name="file-text" class="size-4 text-accent" />
+                  PDF report · {report.pages} pages
+                </p>
+                <p class="mt-3 text-title">Download the full report</p>
+                <a href={report.file} class="btn btn-light mt-6 w-full justify-between" download>
+                  Download PDF
+                  <span class="arrow">
+                    <Icon name="download" class="" />
+                  </span>
+                </a>
+              </div>
+            )
+          }
+          {
+            toc.length > 1 && (
+              <nav aria-label="On this page" class="hidden rounded-lg bg-wash p-6 lg:block">
+                <p class="text-sm text-muted">On this page</p>
+                <ol class="mt-3 grid gap-2 text-[0.9375rem]">
+                  {toc.map((heading) => (
+                    <li>
+                      <a href={`#${heading.slug}`} class="toc-link block leading-snug text-ink-soft transition-colors hover:text-ink" data-toc={heading.slug}>
+                        {heading.text}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+            )
+          }
+        </div>
+      </aside>
+
+      <div class="lg:col-span-8 xl:col-span-7">
+        {
+          report && report.findings.length > 0 && (
+            <dl class="mb-12 grid gap-2 sm:grid-cols-3">
+              {report.findings.map((finding) => (
+                <div class="card flex flex-col p-5">
+                  <dt class="order-2 mt-2 text-sm leading-snug text-muted">{finding.label}</dt>
+                  <dd class="order-1 text-[2.25rem] leading-none tracking-[-0.045em]">{finding.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )
+        }
+        <article class="prose max-w-none">
+          <Content />
+        </article>
+
+        <div class="mt-16 grid gap-3 border-t border-line pt-10">
+          <p class="text-sm text-muted">{authors.length > 1 ? "About the authors" : "About the author"}</p>
+          {
+            authors.map((person) => (
+              <a href={personHref(person)} class="group flex items-center gap-5 rounded-lg bg-wash p-4 transition-colors hover:bg-sunken">
+                <Image src={person.data.portrait} alt="" width={160} height={160} class="size-16 rounded-sm object-cover" />
+                <span class="min-w-0 flex-1">
+                  <span class="link font-medium">{person.data.name}</span>
+                  <span class="block text-sm text-muted">{person.data.role}</span>
+                  <span class="mt-1 hidden text-sm text-muted sm:block">{person.data.focus}</span>
+                </span>
+                <Arrow class="mr-2 text-muted" />
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {
+    related.length > 0 && (
+      <section class="section bg-wash">
+        <div class="shell">
+          <SectionHead eyebrow="Keep reading" title={["More from", "Vertex Insights"]} link={{ label: "All insights", href: "/insights/" }} />
+          <ul class="mt-12 grid gap-x-6 gap-y-14 md:grid-cols-3 lg:mt-16">
+            {related.map((other, index) => (
+              <li class="reveal" style={`--i:${index}`}>
+                <InsightCard entry={other} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  <CtaBand />
+  <ShareSheet title={data.title} url={url} />
+</BaseLayout>
+
+<style>
+  @supports (animation-timeline: scroll()) {
+    .progress {
+      animation: progress linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+
+  @supports not (animation-timeline: scroll()) {
+    .progress {
+      display: none;
+    }
+  }
+
+  @keyframes progress {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  .toc-link[aria-current="true"] {
+    color: var(--ink);
+    font-weight: 500;
+  }
+</style>
+
+<script>
+  /* Marks the section being read in the table of contents. */
+  const links = [...document.querySelectorAll<HTMLAnchorElement>("[data-toc]")];
+  const targets = links.map((link) => document.getElementById(link.dataset.toc ?? "")).filter((el): el is HTMLElement => el !== null);
+  if (targets.length) {
+    const observer = new IntersectionObserver(
+      (items) =>
+        items.forEach((item) => {
+          if (!item.isIntersecting) return;
+          links.forEach((link) => link.setAttribute("aria-current", String(link.dataset.toc === item.target.id)));
+        }),
+      { rootMargin: "-20% 0px -70% 0px" },
+    );
+    targets.forEach((target) => observer.observe(target));
+  }
+</script>

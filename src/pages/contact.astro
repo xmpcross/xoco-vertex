@@ -1,0 +1,104 @@
+---
+import Arrow from "@/components/ui/Arrow.astro";
+import Icon from "@/components/ui/Icon.astro";
+import OfficeGrid from "@/components/ui/OfficeGrid.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import SectionHead from "@/components/ui/SectionHead.astro";
+import { contact } from "@/config/contact";
+import { siteConfig } from "@/config/site";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+const form = siteConfig.contact;
+const live = form.enabled && form.action !== "";
+const { primary } = siteConfig.actions;
+---
+
+<BaseLayout title="Contact" description={contact.lead}>
+  <PageHeader eyebrow="Contact" title={contact.title} lead={contact.lead} crumbs={[{ label: "Contact", href: "/contact/" }]} />
+
+  <section class="section">
+    <div class="shell grid gap-14 lg:grid-cols-12 lg:gap-10">
+      <form class="grid gap-5 sm:grid-cols-2 lg:col-span-7" action={live ? form.action : undefined} method={form.method} aria-describedby={live ? undefined : "contact-note"} novalidate={live ? undefined : true}>
+        <div class="grid gap-2">
+          <label for="contact-name" class="field-label">Name</label>
+          <input id="contact-name" name="name" class="field" autocomplete="name" required disabled={!live} />
+        </div>
+        <div class="grid gap-2">
+          <label for="contact-email" class="field-label">Work email</label>
+          <input id="contact-email" name="email" type="email" class="field" autocomplete="email" required disabled={!live} />
+        </div>
+        <div class="grid gap-2">
+          <label for="contact-company" class="field-label">Company</label>
+          <input id="contact-company" name="company" class="field" autocomplete="organization" disabled={!live} />
+        </div>
+        <div class="grid gap-2">
+          <label for="contact-topic" class="field-label">Topic</label>
+          <select id="contact-topic" name="topic" class="field select" disabled={!live}>
+            {contact.topics.map((topic) => <option>{topic}</option>)}
+          </select>
+        </div>
+        <div class="grid gap-2 sm:col-span-2">
+          <label for="contact-message" class="field-label">Message</label>
+          <textarea id="contact-message" name="message" rows="6" class="field resize-y" required disabled={!live}></textarea>
+        </div>
+        <div class="flex flex-wrap items-center gap-5 sm:col-span-2">
+          <button type="submit" class="btn btn-primary" disabled={!live}>
+            Send message
+            <Arrow />
+          </button>
+          {
+            !live && (
+              <p id="contact-note" class="label max-w-sm">
+                The form is off in this preview. Connect a form endpoint in the site config to turn it on.
+              </p>
+            )
+          }
+        </div>
+      </form>
+
+      <aside class="grid content-start gap-2 lg:col-span-4 lg:col-start-9">
+        <div class="on-night relative overflow-hidden rounded-lg p-6 lg:p-8">
+          <p class="eyebrow">Have a decision to make?</p>
+          <p class="mt-4 text-title">Book forty-five minutes with a partner in your sector. The first conversation is free.</p>
+          <a href={primary.href} class="btn btn-light mt-8">
+            {primary.label}
+            <Arrow />
+          </a>
+        </div>
+        <ul class="card grid p-2">
+          {
+            contact.desks.map((desk) => (
+              <li>
+                <a href={desk.href} class="group flex items-center justify-between gap-4 rounded-sm p-4 transition-colors hover:bg-white">
+                  <span>
+                    <span class="block text-sm text-muted">{desk.label}</span>
+                    <span class="block font-medium">{desk.value}</span>
+                  </span>
+                  <Icon name="mail" class="size-4 text-muted" />
+                </a>
+              </li>
+            ))
+          }
+          <li>
+            <a href={`tel:${siteConfig.phone.replace(/\s/g, "")}`} class="flex items-center justify-between gap-4 rounded-sm p-4 transition-colors hover:bg-white">
+              <span>
+                <span class="block text-sm text-muted">Main line</span>
+                <span class="block font-medium">{siteConfig.phone}</span>
+              </span>
+              <Icon name="phone" class="size-4 text-muted" />
+            </a>
+          </li>
+        </ul>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section bg-wash scroll-mt-(--header-h)" id="offices">
+    <div class="shell">
+      <SectionHead eyebrow="Offices" title={["Where to", "find us"]} />
+      <div class="mt-12 lg:mt-16">
+        <OfficeGrid />
+      </div>
+    </div>
+  </section>
+</BaseLayout>

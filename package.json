@@ -1,0 +1,59 @@
+{
+  "name": "vertex-astro-theme",
+  "description": "An Astro theme for consulting and advisory firms: services and industry pages, case studies with results, insights with reports and events, partner profiles, offices, careers and a consultation booking flow.",
+  "type": "module",
+  "version": "1.0.0",
+  "author": "Andrei Alba",
+  "license": "SEE LICENSE IN LICENSE",
+  "private": true,
+  "keywords": [
+    "astro-theme",
+    "astro",
+    "consulting",
+    "advisory",
+    "management-consulting",
+    "strategy",
+    "professional-services",
+    "case-studies",
+    "insights",
+    "blog",
+    "tailwindcss"
+  ],
+  "homepage": "https://vertex.xocoweb.workers.dev/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xocothemes/vertex.git"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "check": "astro check",
+    "release:check": "npm run check && npm run build && npm run format:check",
+    "preview": "astro preview",
+    "astro": "astro",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "overrides": {
+    "yaml": "^2.8.3"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^8.0.1",
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.3.3",
+    "sharp": "^0.35.4",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^24.13.6",
+    "prettier": "^3.9.8",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0"
+  }
+}

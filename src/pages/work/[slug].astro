@@ -1,0 +1,164 @@
+---
+import { Image } from "astro:assets";
+import { render } from "astro:content";
+import CaseCard from "@/components/work/CaseCard.astro";
+import CtaBand from "@/components/ui/CtaBand.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import SectionHead from "@/components/ui/SectionHead.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { caseHref, getIndustries, getServices, getWork, industryHref, serviceHref, type Case } from "@/lib/catalog";
+import { getPeople, personHref } from "@/lib/people";
+import { caseSchema } from "@/lib/schema";
+
+export async function getStaticPaths() {
+  const cases = await getWork();
+  return cases.map((item) => ({ params: { slug: item.id }, props: { item } }));
+}
+
+interface Props {
+  item: Case;
+}
+
+const { item } = Astro.props;
+const { Content } = await render(item);
+const { data } = item;
+const industries = await getIndustries();
+const industry = industries.find((entry) => entry.id === data.industry.id);
+const services = (await getServices()).filter((service) => data.services.some((ref) => ref.id === service.id));
+const people = await getPeople();
+const team = data.team.map((ref) => people.find((person) => person.id === ref.id)).filter((person) => person !== undefined);
+const industryById = new Map(industries.map((entry) => [entry.id, entry]));
+
+/* Same industry first, then any other case. */
+const others = (await getWork()).filter((other) => other.id !== item.id);
+const related = [
+  ...others.filter((other) => other.data.industry.id === data.industry.id),
+  ...others.filter((other) => other.data.industry.id !== data.industry.id),
+].slice(0, 3);
+---
+
+<BaseLayout title={data.title} description={data.description} image={data.cover} imageAlt={data.coverAlt} type="article" structuredData={caseSchema(item)}>
+  <PageHeader
+    glass={3}
+    eyebrow="Case study"
+    title={data.title}
+    lead={data.client}
+    crumbs={[{ label: "Our work", href: "/work/" }, { label: industry?.data.title ?? "Case", href: `${caseHref(item)}` }]}
+    class="pb-28 lg:pb-36"
+  >
+    <dl class="rise mt-14 grid grid-cols-2 border-t border-night-line lg:grid-cols-4" style="--i:3">
+      {
+        data.results.map((result) => (
+          <div class="flex flex-col border-night-line py-6 pr-6 even:border-l even:pl-6 lg:border-l lg:pl-6 lg:first:border-l-0 lg:first:pl-0">
+            <dt class="order-2 mt-2 text-sm leading-snug text-night-muted">{result.label}</dt>
+            <dd class="order-1 text-[clamp(2rem,1.5rem+1.6vw,3rem)] leading-none tracking-[-0.045em] text-accent">{result.value}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </PageHeader>
+
+  <div class="shell relative -mt-24 lg:-mt-28">
+    <div class="media rise aspect-16/9 rounded-lg" style="--i:4">
+      <Image src={data.cover} alt={data.coverAlt} widths={[640, 960, 1400, 1800]} sizes="(min-width: 82rem) 82rem, 92vw" loading="eager" class="size-full object-cover" />
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="shell grid gap-14 lg:grid-cols-12 lg:gap-10">
+      <aside class="lg:col-span-4">
+        <dl class="grid gap-6 text-[0.9375rem] lg:sticky lg:top-[calc(var(--header-h)+2rem)]">
+          <div>
+            <dt class="text-sm text-muted">Client</dt>
+            <dd class="mt-1">{data.client}</dd>
+          </div>
+          {
+            industry && (
+              <div>
+                <dt class="text-sm text-muted">Industry</dt>
+                <dd class="mt-1">
+                  <a href={industryHref(industry)} class="link-quiet">
+                    {industry.data.title}
+                  </a>
+                </dd>
+              </div>
+            )
+          }
+          <div>
+            <dt class="text-sm text-muted">Services</dt>
+            <dd class="mt-2 flex flex-wrap gap-1.5">
+              {
+                services.map((service) => (
+                  <a href={serviceHref(service)} class="tag transition-colors hover:bg-sunken">
+                    {service.data.title}
+                  </a>
+                ))
+              }
+            </dd>
+          </div>
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <dt class="text-sm text-muted">Duration</dt>
+              <dd class="mt-1">{data.duration}</dd>
+            </div>
+            <div>
+              <dt class="text-sm text-muted">Year</dt>
+              <dd class="mt-1">{data.year}</dd>
+            </div>
+          </div>
+          {
+            team.length > 0 && (
+              <div class="border-t border-line pt-6">
+                <dt class="text-sm text-muted">Vertex team</dt>
+                <dd class="mt-3 grid gap-3">
+                  {team.map((person) => (
+                    <a href={personHref(person)} class="group flex items-center gap-3">
+                      <Image src={person.data.portrait} alt="" width={96} height={96} class="size-11 rounded-sm object-cover grayscale transition group-hover:grayscale-0" />
+                      <span>
+                        <span class="link block font-medium">{person.data.name}</span>
+                        <span class="block text-sm text-muted">{person.data.role}</span>
+                      </span>
+                    </a>
+                  ))}
+                </dd>
+              </div>
+            )
+          }
+        </dl>
+      </aside>
+
+      <div class="lg:col-span-8 xl:col-span-7">
+        <div class="prose max-w-none">
+          <Content />
+        </div>
+        {
+          data.quote && (
+            <figure class="on-night relative mt-14 overflow-hidden rounded-lg p-8 lg:p-10">
+              <blockquote class="text-[clamp(1.35rem,1.15rem+0.8vw,1.85rem)] leading-snug tracking-[-0.025em]">“{data.quote.text}”</blockquote>
+              <figcaption class="mt-6 text-night-muted">
+                {data.quote.role}, {data.client.replace(/^A /, "a ")}
+              </figcaption>
+            </figure>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section bg-wash">
+    <div class="shell">
+      <SectionHead eyebrow="More work" title={["Related", "case studies"]} link={{ label: "All case studies", href: "/work/" }} />
+      <ul class="mt-12 grid gap-x-6 gap-y-14 md:grid-cols-3 lg:mt-16">
+        {
+          related.map((other, index) => (
+            <li class="reveal" style={`--i:${index}`}>
+              <CaseCard item={other} industry={industryById.get(other.data.industry.id)} />
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <CtaBand />
+</BaseLayout>

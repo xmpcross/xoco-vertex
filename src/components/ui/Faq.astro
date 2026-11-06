@@ -1,0 +1,44 @@
+---
+import Arrow from "@/components/ui/Arrow.astro";
+
+interface Props {
+  eyebrow?: string;
+  title: string;
+  items: { question: string; answer: string }[];
+  /** The link under the title, for questions the list does not answer. */
+  more?: { label: string; href: string };
+}
+
+const { eyebrow = "FAQ", title, items, more = { label: "Contact us", href: "/contact/" } } = Astro.props;
+---
+
+<div class="grid gap-10 lg:grid-cols-12 lg:gap-10">
+  <div class="flex flex-col lg:col-span-4">
+    <p class="eyebrow">{eyebrow}</p>
+    <h2 class="text-display-md mt-5 max-w-sm">{title}</h2>
+    <div class="mt-8 lg:mt-auto">
+      <p class="text-muted">Any more questions?</p>
+      <a href={more.href} class="group mt-1 inline-flex items-center gap-2 text-lg">
+        <span class="link">{more.label}</span>
+        <Arrow />
+      </a>
+    </div>
+  </div>
+  <div class="lg:col-span-8">
+    {
+      items.map((item, index) => (
+        <details class="faq group border-b border-line first:border-t" name="faq" open={index === 0}>
+          <summary class="flex items-center justify-between gap-6 py-6 text-lg tracking-[-0.015em]">
+            {item.question}
+            <span class="faq-icon text-muted" aria-hidden="true" />
+          </summary>
+          <div class="faq-body">
+            <div>
+              <p class="max-w-2xl pb-7 text-muted">{item.answer}</p>
+            </div>
+          </div>
+        </details>
+      ))
+    }
+  </div>
+</div>

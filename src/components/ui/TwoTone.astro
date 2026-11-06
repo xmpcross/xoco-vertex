@@ -1,0 +1,10 @@
+---
+interface Props {
+  /** One part prints in the strong tone; with two, the first is quiet. */
+  parts: string | string[];
+}
+
+const list = typeof Astro.props.parts === "string" ? [Astro.props.parts] : Astro.props.parts;
+---
+
+{list.length > 1 ? <><span class="dim">{list[0]}</span> {list.slice(1).join(" ")}</> : list[0]}

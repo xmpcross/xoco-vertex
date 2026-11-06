@@ -1,0 +1,55 @@
+---
+import Arrow from "@/components/ui/Arrow.astro";
+import TwoTone from "@/components/ui/TwoTone.astro";
+
+interface Props {
+  eyebrow?: string;
+  /** Two parts print in two tones: the first quiet, the second strong. */
+  title: string | string[];
+  lead?: string;
+  link?: { label: string; href: string };
+  /** `split` puts the eyebrow beside the heading on wide screens. */
+  align?: "left" | "center" | "split";
+  size?: "lg" | "md";
+  class?: string;
+}
+
+const { eyebrow, title, lead, link, align = "left", size = "lg", class: className } = Astro.props;
+const heading = size === "lg" ? "text-display-lg" : "text-display-md";
+---
+
+{
+  align === "split" ? (
+    <div class:list={["grid gap-6 lg:grid-cols-12 lg:gap-10", className]}>
+      <div class="lg:col-span-4">{eyebrow && <p class="eyebrow">{eyebrow}</p>}</div>
+      <div class="lg:col-span-8 xl:col-span-7">
+        <h2 class={heading}>
+          <TwoTone parts={title} />
+        </h2>
+        {lead && <p class="mt-5 max-w-2xl text-lead text-muted">{lead}</p>}
+        {link && (
+          <a href={link.href} class="group mt-7 inline-flex items-center gap-2 font-medium">
+            <span class="link">{link.label}</span>
+            <Arrow />
+          </a>
+        )}
+      </div>
+    </div>
+  ) : (
+    <div class:list={[align === "center" ? "mx-auto max-w-3xl text-center" : "flex flex-wrap items-end justify-between gap-x-10 gap-y-6", className]}>
+      <div class:list={[align === "left" && "max-w-3xl"]}>
+        {eyebrow && <p class="eyebrow mb-5">{eyebrow}</p>}
+        <h2 class={heading}>
+          <TwoTone parts={title} />
+        </h2>
+        {lead && <p class:list={["mt-5 text-lead text-muted", align === "center" ? "mx-auto max-w-2xl" : "max-w-2xl"]}>{lead}</p>}
+      </div>
+      {link && (
+        <a href={link.href} class:list={["group inline-flex items-center gap-2 font-medium", align === "center" && "mt-7"]}>
+          <span class="link">{link.label}</span>
+          <Arrow />
+        </a>
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,45 @@
+---
+import { Image } from "astro:assets";
+import Arrow from "@/components/ui/Arrow.astro";
+import { officeById } from "@/config/offices";
+import { personHref, type Person } from "@/lib/people";
+
+interface Props {
+  person: Person;
+  sizes?: string;
+  headingLevel?: "h2" | "h3";
+}
+
+const { person, sizes = "(min-width: 64rem) 19rem, (min-width: 40rem) 30vw, 46vw", headingLevel: Heading = "h3" } = Astro.props;
+const office = officeById(person.data.office);
+---
+
+<a href={personHref(person)} class="person group block">
+  <span class="media relative block aspect-4/5">
+    <Image src={person.data.portrait} alt="" widths={[320, 480, 640]} sizes={sizes} class="portrait size-full object-cover" />
+    <span class="absolute right-3 bottom-3 grid size-9 place-items-center rounded-sm bg-white text-ink opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
+      <Arrow />
+    </span>
+  </span>
+  <Heading class="mt-4 text-[1.0625rem] leading-snug font-medium tracking-[-0.015em]">
+    <span class="link">{person.data.name}</span>
+  </Heading>
+  <p class="mt-0.5 text-sm text-muted">
+    {person.data.role}{office && <>, {office.city}</>}
+  </p>
+</a>
+
+<style>
+  .portrait {
+    filter: grayscale(1) contrast(1.02);
+    transition:
+      filter 0.6s,
+      transform 1s var(--ease-out-expo);
+  }
+
+  .person:hover .portrait,
+  .person:focus-visible .portrait {
+    filter: none;
+    transform: scale(1.03);
+  }
+</style>

@@ -1,0 +1,37 @@
+---
+import { Image } from "astro:assets";
+import Arrow from "@/components/ui/Arrow.astro";
+import { caseHref, type Case, type Industry } from "@/lib/catalog";
+
+interface Props {
+  item: Case;
+  industry?: Industry;
+  sizes?: string;
+  headingLevel?: "h2" | "h3";
+}
+
+const { item, industry, sizes = "(min-width: 64rem) 26rem, (min-width: 40rem) 45vw, 92vw", headingLevel: Heading = "h3" } = Astro.props;
+const [headline] = item.data.results;
+---
+
+<a href={caseHref(item)} class="case-card group flex h-full flex-col">
+  <span class="media relative block aspect-4/3">
+    <Image src={item.data.cover} alt="" widths={[480, 720, 960]} sizes={sizes} class="size-full object-cover transition-transform duration-1000 ease-(--ease-out-expo) group-hover:scale-[1.04]" />
+    <span class="result absolute bottom-4 left-4 bg-white! text-ink!">
+      <span class="font-semibold">{headline.value}</span>
+      <span class="text-muted">{headline.label}</span>
+    </span>
+  </span>
+  <span class="mt-5 flex items-center gap-2 text-sm text-muted">
+    {industry && <span>{industry.data.title}</span>}
+    {industry && <span aria-hidden="true">·</span>}
+    <span>{item.data.year}</span>
+  </span>
+  <Heading class="mt-2 text-title">
+    <span class="link">{item.data.title}</span>
+  </Heading>
+  <span class="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-medium">
+    Read the case
+    <Arrow />
+  </span>
+</a>

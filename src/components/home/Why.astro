@@ -1,0 +1,41 @@
+---
+import { Image } from "astro:assets";
+import aboutPhoto from "@/assets/images/about.jpg";
+import Icon from "@/components/ui/Icon.astro";
+import SectionHead from "@/components/ui/SectionHead.astro";
+import { home } from "@/config/home";
+
+const { why } = home;
+---
+
+<section class="section">
+  <div class="shell">
+    <SectionHead eyebrow={why.eyebrow} title={why.title} lead={why.lead} align="center" />
+
+    <ul class="mt-14 grid gap-2 md:grid-cols-3 lg:mt-20">
+      {
+        why.points.map((point, index) => (
+          <li class="card reveal flex flex-col p-6 lg:p-8" style={`--i:${index}`}>
+            <Icon name={point.icon} class="size-6" />
+            <h3 class="mt-14 text-title lg:mt-20">{point.title}</h3>
+            <p class="mt-2 text-muted">{point.body}</p>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="mt-2 grid gap-2 lg:grid-cols-12">
+      <div class="reveal relative min-h-[22rem] overflow-hidden rounded-(--radius) lg:col-span-7">
+        <Image src={aboutPhoto} alt="" widths={[640, 960, 1400]} sizes="(min-width: 64rem) 52rem, 92vw" class="absolute inset-0 size-full object-cover" />
+        <div class="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent"></div>
+        <div class="absolute inset-x-0 bottom-0 p-6 text-white lg:p-8">
+          <p class="text-stat">{why.photo.value}</p>
+          <p class="mt-2 max-w-xs text-white/80">{why.photo.label}</p>
+        </div>
+      </div>
+      <div class="on-night glass glass-4 reveal relative flex min-h-[22rem] flex-col justify-end overflow-hidden rounded-(--radius) p-6 lg:col-span-5 lg:p-8">
+        <p class="relative max-w-sm text-[clamp(1.25rem,1.1rem+0.6vw,1.6rem)] leading-snug tracking-[-0.02em]">{why.panel}</p>
+      </div>
+    </div>
+  </div>
+</section>

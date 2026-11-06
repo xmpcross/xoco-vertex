@@ -1,0 +1,215 @@
+---
+import { render } from "astro:content";
+import InsightCard from "@/components/insights/InsightCard.astro";
+import PersonCard from "@/components/people/PersonCard.astro";
+import CaseCard from "@/components/work/CaseCard.astro";
+import Arrow from "@/components/ui/Arrow.astro";
+import CtaBand from "@/components/ui/CtaBand.astro";
+import DetailHero from "@/components/ui/DetailHero.astro";
+import Faq from "@/components/ui/Faq.astro";
+import Icon from "@/components/ui/Icon.astro";
+import SectionHead from "@/components/ui/SectionHead.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { casesForService, getIndustries, getServices, getWork, industryHref, type Service } from "@/lib/catalog";
+import { getInsights, insightsFor } from "@/lib/insights";
+import { getPeople, peopleFor } from "@/lib/people";
+import { serviceSchema } from "@/lib/schema";
+
+export async function getStaticPaths() {
+  const services = await getServices();
+  return services.map((service) => ({ params: { slug: service.id }, props: { service } }));
+}
+
+interface Props {
+  service: Service;
+}
+
+const { service } = Astro.props;
+const { Content } = await render(service);
+const { data } = service;
+const industries = await getIndustries();
+const industryById = new Map(industries.map((industry) => [industry.id, industry]));
+const cases = casesForService(await getWork(), service.id).slice(0, 3);
+const experts = peopleFor(await getPeople(), "services", service.id).slice(0, 4);
+const reading = insightsFor(await getInsights(), "services", service.id).slice(0, 3);
+const sectors = industries.filter((industry) => industry.data.services.some((ref) => ref.id === service.id));
+---
+
+<BaseLayout title={data.title} description={data.description} image={data.cover} imageAlt={data.coverAlt} structuredData={serviceSchema(service)}>
+  <DetailHero
+    eyebrow="Service"
+    title={data.title}
+    lead={data.summary}
+    crumbs={[{ label: "Services", href: "/services/" }, { label: data.title, href: `/services/${service.id}/` }]}
+    figures={data.outcomes}
+    cover={data.cover}
+    coverAlt={data.coverAlt}
+  />
+
+  <section class="section">
+    <div class="shell grid gap-12 lg:grid-cols-12 lg:gap-10">
+      <div class="lg:col-span-4">
+        <p class="eyebrow">Overview</p>
+        <p class="mt-5 max-w-xs text-lead text-muted">{data.description}</p>
+      </div>
+      <div class="lg:col-span-8 xl:col-span-7">
+        <div class="prose max-w-none">
+          <Content />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {
+    data.questions.length > 0 && (
+      <section class="section bg-wash">
+        <div class="shell grid gap-12 lg:grid-cols-12 lg:gap-10">
+          <div class="lg:col-span-4">
+            <p class="eyebrow">Questions we answer</p>
+            <h2 class="text-display-md mt-5 max-w-xs">What clients bring to this practice</h2>
+          </div>
+          <ol class="lg:col-span-8">
+            {data.questions.map((question, index) => (
+              <li class="reveal flex gap-6 border-b border-line-strong py-6 first:border-t lg:gap-10">
+                <span class="w-8 shrink-0 pt-1 text-sm text-muted">{String(index + 1).padStart(2, "0")}</span>
+                <span class="text-[clamp(1.1rem,1rem+0.4vw,1.35rem)] leading-snug tracking-[-0.018em]">{question}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    data.offerings.length > 0 && (
+      <section class="section">
+        <div class="shell">
+          <SectionHead eyebrow="What we do" title={["How the practice", "can help"]} />
+          <ul class="offerings mt-12 grid sm:grid-cols-2 lg:mt-16 lg:grid-cols-3">
+            {data.offerings.map((offering, index) => (
+              <li class="reveal p-6 lg:p-8" style={`--i:${index % 3}`}>
+                <span class="text-sm text-accent-ink">{String(index + 1).padStart(2, "0")}</span>
+                <h3 class="mt-10 text-title">{offering.title}</h3>
+                <p class="mt-2 text-muted">{offering.body}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    cases.length > 0 && (
+      <section class="section border-t border-line">
+        <div class="shell">
+          <SectionHead eyebrow="Our work" title={["Results from", "this practice"]} link={{ label: "All case studies", href: "/work/" }} />
+          <ul class="mt-12 grid gap-x-6 gap-y-14 md:grid-cols-3 lg:mt-16">
+            {cases.map((item, index) => (
+              <li class="reveal" style={`--i:${index}`}>
+                <CaseCard item={item} industry={industryById.get(item.data.industry.id)} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    sectors.length > 0 && (
+      <section class="pb-[clamp(5rem,3.4rem+6.5vw,9.5rem)]">
+        <div class="shell">
+          <div class="card grid gap-8 p-6 lg:grid-cols-12 lg:p-10">
+            <div class="lg:col-span-4">
+              <p class="eyebrow">Industries</p>
+              <p class="mt-4 max-w-xs text-title">Where this practice works most often</p>
+            </div>
+            <ul class="grid gap-2 sm:grid-cols-2 lg:col-span-8">
+              {sectors.map((industry) => (
+                <li>
+                  <a href={industryHref(industry)} class="group flex items-center gap-4 rounded-sm bg-white p-4 transition-shadow hover:shadow-[0_0_0_1px_var(--ink)]">
+                    <span class="grid size-10 place-items-center rounded-sm bg-wash">
+                      <Icon name={industry.data.icon} class="size-4" />
+                    </span>
+                    <span class="flex-1 font-medium">{industry.data.title}</span>
+                    <Arrow class="text-muted" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    experts.length > 0 && (
+      <section class="section border-t border-line">
+        <div class="shell">
+          <SectionHead eyebrow="Experts" title={["Who leads", "the practice"]} link={{ label: "All people", href: "/people/" }} />
+          <ul class="mt-12 grid grid-cols-2 gap-x-4 gap-y-10 lg:mt-16 lg:grid-cols-4 lg:gap-x-6">
+            {experts.map((person, index) => (
+              <li class="reveal" style={`--i:${index}`}>
+                <PersonCard person={person} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    reading.length > 0 && (
+      <section class="section bg-wash">
+        <div class="shell">
+          <SectionHead eyebrow="Insights" title={["Further", "reading"]} link={{ label: "All insights", href: "/insights/" }} />
+          <ul class="mt-12 grid gap-x-6 gap-y-14 md:grid-cols-3 lg:mt-16">
+            {reading.map((entry, index) => (
+              <li class="reveal" style={`--i:${index}`}>
+                <InsightCard entry={entry} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    data.faq.length > 0 && (
+      <section class="section">
+        <div class="shell">
+          <Faq title={`${data.title}: common questions`} items={data.faq} />
+        </div>
+      </section>
+    )
+  }
+
+  <CtaBand />
+</BaseLayout>
+
+<style>
+  .offerings > li {
+    border-top: 1px solid var(--line);
+  }
+
+  @media (min-width: 40rem) {
+    .offerings > li:nth-child(2n) {
+      border-left: 1px solid var(--line);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .offerings > li:nth-child(2n) {
+      border-left: 0;
+    }
+
+    .offerings > li:not(:nth-child(3n + 1)) {
+      border-left: 1px solid var(--line);
+    }
+  }
+</style>

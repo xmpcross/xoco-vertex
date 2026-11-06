@@ -1,0 +1,149 @@
+---
+import { Image } from "astro:assets";
+import aboutPhoto from "@/assets/images/about.jpg";
+import Approach from "@/components/home/Approach.astro";
+import PersonCard from "@/components/people/PersonCard.astro";
+import CtaBand from "@/components/ui/CtaBand.astro";
+import Icon from "@/components/ui/Icon.astro";
+import OfficeGrid from "@/components/ui/OfficeGrid.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import SectionHead from "@/components/ui/SectionHead.astro";
+import { about } from "@/config/about";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getPeople } from "@/lib/people";
+
+const leaders = (await getPeople()).filter((person) => person.data.group === "Leadership");
+---
+
+<BaseLayout title="About" description={about.lead} image={aboutPhoto} imageAlt="Vertex colleagues working around a long table">
+  <PageHeader eyebrow="About Vertex" title={about.title} lead={about.lead} crumbs={[{ label: "About", href: "/about/" }]} class="pb-28 lg:pb-40" />
+
+  <div class="shell relative -mt-28 lg:-mt-40">
+    <div class="media rise aspect-16/10 rounded-lg lg:aspect-21/9" style="--i:3">
+      <Image src={aboutPhoto} alt="Four colleagues in business dress talking around a meeting table in a bright office" widths={[640, 960, 1400, 2000]} sizes="(min-width: 82rem) 82rem, 92vw" loading="eager" class="size-full object-cover" />
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="shell grid gap-12 lg:grid-cols-12 lg:gap-10">
+      <div class="lg:col-span-4">
+        <p class="eyebrow">Our story</p>
+      </div>
+      <div class="lg:col-span-8">
+        <p class="text-display-md reveal max-w-3xl">{about.story[0]}</p>
+        <p class="reveal mt-8 max-w-2xl text-lead text-muted">{about.story[1]}</p>
+      </div>
+    </div>
+    <div class="shell mt-16 lg:mt-24">
+      <dl class="grid grid-cols-2 border-t border-line lg:grid-cols-4">
+        {
+          about.stats.map((stat) => (
+            <div class="reveal flex flex-col border-b border-line py-8 pr-6 even:border-l even:pl-6 lg:border-b-0 lg:border-l lg:pl-6 lg:first:border-l-0 lg:first:pl-0">
+              <dt class="order-2 mt-3 text-sm text-muted">{stat.label}</dt>
+              <dd class="text-stat order-1">{stat.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+
+  <section class="section bg-wash">
+    <div class="shell">
+      <SectionHead eyebrow="What we believe" title={["Four rules we", "do not bend"]} align="split" />
+      <ul class="mt-14 grid gap-2 sm:grid-cols-2 lg:mt-20 lg:grid-cols-4">
+        {
+          about.values.map((value, index) => (
+            <li class="reveal flex flex-col rounded-(--radius) bg-white p-6 lg:p-7" style={`--i:${index}`}>
+              <Icon name={value.icon} class="size-6" />
+              <h3 class="mt-14 text-title">{value.title}</h3>
+              <p class="mt-2 text-muted">{value.body}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="shell">
+      <SectionHead eyebrow="Since 2009" title={["How a four-partner firm grew", "without changing how it works"]} />
+      <ol class="mt-14 grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:mt-20 lg:grid-cols-3">
+        {
+          about.timeline.map((item, index) => (
+            <li class="milestone reveal relative border-t border-line pt-8" style={`--i:${index % 3}`}>
+              <span class="text-display-md block">{item.year}</span>
+              <h3 class="mt-5 text-title">{item.title}</h3>
+              <p class="mt-2 max-w-xs text-muted">{item.body}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+
+  <Approach />
+
+  <section class="section">
+    <div class="shell">
+      <SectionHead eyebrow="Leadership" title={["The partners who", "run the firm"]} link={{ label: "Meet everyone", href: "/people/" }} />
+      <ul class="mt-12 grid grid-cols-2 gap-x-4 gap-y-10 lg:mt-16 lg:grid-cols-4 lg:gap-x-6">
+        {
+          leaders.map((person, index) => (
+            <li class="reveal" style={`--i:${index}`}>
+              <PersonCard person={person} />
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="section border-t border-line">
+    <div class="shell grid gap-12 lg:grid-cols-12 lg:gap-10">
+      <div class="lg:col-span-4">
+        <p class="eyebrow">Recognition</p>
+        <h2 class="text-display-md mt-5 max-w-xs">What others say about how we work</h2>
+      </div>
+      <ul class="lg:col-span-8">
+        {
+          about.recognition.map((item) => (
+            <li class="reveal flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-line py-6 first:border-t">
+              <span class="flex items-center gap-3 text-title">
+                <Icon name="award" class="size-5 text-accent-ink" />
+                {item.title}
+              </span>
+              <span class="text-muted">
+                {item.source}, {item.year}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="section bg-wash" id="offices">
+    <div class="shell">
+      <SectionHead eyebrow="Offices" title={["Four offices,", "one partnership"]} link={{ label: "Contact an office", href: "/contact/" }} />
+      <div class="mt-12 lg:mt-16">
+        <OfficeGrid />
+      </div>
+    </div>
+  </section>
+
+  <CtaBand />
+</BaseLayout>
+
+<style>
+  /* A short accent stroke over the start of each milestone's rule. */
+  .milestone::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: 2.5rem;
+    height: 2px;
+    background: var(--accent-ink);
+  }
+</style>

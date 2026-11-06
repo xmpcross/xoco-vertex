@@ -1,0 +1,33 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import InsightArchive from "@/components/insights/InsightArchive.astro";
+import { insightTypeKeys, insightTypes, pageSize } from "@/config/insights";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getInsights, typeHref } from "@/lib/insights";
+import { getPeople, peopleById } from "@/lib/people";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const entries = await getInsights();
+  return insightTypeKeys.flatMap((type) =>
+    paginate(
+      entries.filter((entry) => entry.data.type === type),
+      { pageSize, params: { type }, props: { type } },
+    ),
+  );
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { page, type } = Astro.props as Props;
+const label = insightTypes[type].label;
+const people = peopleById(await getPeople());
+---
+
+<BaseLayout
+  title={page.currentPage === 1 ? label : `${label}, page ${page.currentPage}`}
+  description={insightTypes[type].description}
+  prevUrl={page.url.prev}
+  nextUrl={page.url.next}
+>
+  <InsightArchive entries={page.data} people={people} current={page.currentPage} last={page.lastPage} base={typeHref(type)} type={type} />
+</BaseLayout>

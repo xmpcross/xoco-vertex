@@ -1,0 +1,620 @@
+---
+import { Image } from "astro:assets";
+import Arrow from "@/components/ui/Arrow.astro";
+import Faq from "@/components/ui/Faq.astro";
+import Icon from "@/components/ui/Icon.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import { consultation } from "@/config/consultation";
+import { siteConfig } from "@/config/site";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getIndustries, getServices } from "@/lib/catalog";
+import { getPeople } from "@/lib/people";
+import { faqSchema } from "@/lib/schema";
+
+const form = siteConfig.consultation;
+const live = form.enabled && form.action !== "";
+const services = await getServices();
+const industries = await getIndustries();
+const leads = (await getPeople()).filter((person) => person.data.group !== "Senior advisors");
+
+/* The partner shown for each industry: the first lead who works in it. The first lead overall stands in until one is picked. */
+const partnerFor = new Map(industries.map((industry) => [industry.id, leads.find((person) => person.data.industries.some((ref) => ref.id === industry.id)) ?? leads[0]]));
+const partners = [...new Set([leads[0], ...partnerFor.values()])].filter((person) => person !== undefined);
+const steps = ["Topic", "Organization", "Timing", "Details"];
+---
+
+<BaseLayout title="Book a consultation" description={consultation.lead} structuredData={faqSchema(consultation.faq)}>
+  <PageHeader glass={5} eyebrow="Consultation" title={consultation.title} lead={consultation.lead} crumbs={[{ label: "Book a consultation", href: "/consultation/" }]} />
+
+  <section class="section pt-12! lg:pt-16!">
+    <div class="shell grid gap-14 lg:grid-cols-12 lg:gap-10">
+      <form class="booking lg:col-span-7" action={live ? form.action : undefined} method={form.method} novalidate data-booking data-live={live ? "" : undefined}>
+        <ol class="steps-bar mb-12 grid grid-cols-4 gap-2" aria-label="Progress">
+          {
+            steps.map((label, index) => (
+              <li class="step-pill" data-step-pill={index}>
+                <span class="step-track" />
+                <span class="mt-3 flex items-center gap-2 text-sm">
+                  <span class="text-muted">{String(index + 1).padStart(2, "0")}</span>
+                  <span class="hidden sm:inline">{label}</span>
+                </span>
+              </li>
+            ))
+          }
+        </ol>
+
+        <fieldset class="step" data-step="0">
+          <legend class="text-display-md">What is on the table?</legend>
+          <p class="mt-3 text-muted">Pick every area that applies. We will bring the right people.</p>
+          <div class="mt-8 grid gap-2 sm:grid-cols-2" data-required-group="topics">
+            {
+              services.map((service) => (
+                <label class="choice">
+                  <input type="checkbox" name="topics" value={service.data.title} class="sr-only" />
+                  <span class="choice-icon">
+                    <Icon name={service.data.icon} class="size-4" />
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block font-medium">{service.data.title}</span>
+                    <span class="mt-0.5 block text-sm leading-snug text-muted">{service.data.summary}</span>
+                  </span>
+                  <span class="choice-check">
+                    <Icon name="check" class="size-3" stroke={2.5} />
+                  </span>
+                </label>
+              ))
+            }
+          </div>
+          <p class="field-error mt-3 hidden" data-error-for="topics">Choose at least one area.</p>
+          <div class="mt-8 grid gap-2">
+            <label for="booking-brief" class="field-label">The decision in a sentence or two <span class="font-normal text-muted">(optional)</span></label>
+            <textarea id="booking-brief" name="brief" rows="3" class="field resize-y" placeholder="We are deciding whether to…"></textarea>
+          </div>
+        </fieldset>
+
+        <fieldset class="step" data-step="1">
+          <legend class="text-display-md">About your organization</legend>
+          <p class="mt-3 text-muted">So the partner who calls knows your market.</p>
+          <p class="field-label mt-8">Industry</p>
+          <div class="mt-3 flex flex-wrap gap-2" data-required-group="industry">
+            {
+              industries.map((industry) => (
+                <label class="chip-choice">
+                  <input type="radio" name="industry" value={industry.id} data-label={industry.data.title} class="sr-only" />
+                  <Icon name={industry.data.icon} class="size-3.5" />
+                  {industry.data.title}
+                </label>
+              ))
+            }
+          </div>
+          <p class="field-error mt-3 hidden" data-error-for="industry">Choose your industry.</p>
+          <p class="field-label mt-8">Annual revenue</p>
+          <div class="mt-3 flex flex-wrap gap-2" data-required-group="size">
+            {
+              consultation.sizes.map((size) => (
+                <label class="chip-choice">
+                  <input type="radio" name="size" value={size} class="sr-only" />
+                  {size}
+                </label>
+              ))
+            }
+          </div>
+          <p class="field-error mt-3 hidden" data-error-for="size">Choose a size.</p>
+          <div class="mt-8 grid gap-2 sm:max-w-sm">
+            <label for="booking-role" class="field-label">Your role</label>
+            <input id="booking-role" name="role" class="field" autocomplete="organization-title" placeholder="Chief Financial Officer" />
+          </div>
+        </fieldset>
+
+        <fieldset class="step" data-step="2">
+          <legend class="text-display-md">When should we talk?</legend>
+          <p class="mt-3 text-muted">Pick a slot for a forty-five minute call, in your local time.</p>
+          <p class="field-label mt-8">When would you want to start?</p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            {
+              consultation.timings.map((timing, index) => (
+                <label class="chip-choice">
+                  <input type="radio" name="timing" value={timing} class="sr-only" checked={index === 1} />
+                  {timing}
+                </label>
+              ))
+            }
+          </div>
+          <p class="field-label mt-8">Day</p>
+          <div class="days mt-3" data-days data-count={consultation.days} data-required-group="day">
+            <div class="grid gap-2 sm:max-w-sm" data-days-fallback>
+              <label for="booking-when" class="sr-only">Preferred days and times</label>
+              <input id="booking-when" name="when" class="field" placeholder="e.g. Tuesday or Wednesday afternoon" />
+            </div>
+          </div>
+          <p class="field-error mt-3 hidden" data-error-for="day">Choose a day.</p>
+          <div class="hidden" data-slot-block>
+            <p class="field-label mt-8">Time</p>
+            <div class="mt-3 flex flex-wrap gap-2" data-required-group="slot">
+              {
+                consultation.slots.map((slot) => (
+                  <label class="chip-choice">
+                    <input type="radio" name="slot" value={slot} class="sr-only" />
+                    {slot}
+                  </label>
+                ))
+              }
+            </div>
+            <p class="field-error mt-3 hidden" data-error-for="slot">Choose a time.</p>
+          </div>
+        </fieldset>
+
+        <fieldset class="step" data-step="3">
+          <legend class="text-display-md">Your details</legend>
+          <p class="mt-3 text-muted">We use these to confirm the call, nothing else.</p>
+          <div class="mt-8 grid gap-5 sm:grid-cols-2">
+            <div class="grid gap-2">
+              <label for="booking-name" class="field-label">Full name</label>
+              <input id="booking-name" name="name" class="field" autocomplete="name" required />
+              <p class="field-error hidden" data-error-for="name">Enter your name.</p>
+            </div>
+            <div class="grid gap-2">
+              <label for="booking-email" class="field-label">Work email</label>
+              <input id="booking-email" name="email" type="email" class="field" autocomplete="email" required />
+              <p class="field-error hidden" data-error-for="email">Enter a valid email address.</p>
+            </div>
+            <div class="grid gap-2">
+              <label for="booking-company" class="field-label">Company</label>
+              <input id="booking-company" name="company" class="field" autocomplete="organization" required />
+              <p class="field-error hidden" data-error-for="company">Enter your company.</p>
+            </div>
+            <div class="grid gap-2">
+              <label for="booking-phone" class="field-label">Phone <span class="font-normal text-muted">(optional)</span></label>
+              <input id="booking-phone" name="phone" type="tel" class="field" autocomplete="tel" />
+            </div>
+          </div>
+          <label class="mt-6 flex items-start gap-3 text-sm text-muted">
+            <input type="checkbox" name="nda" class="mt-0.5 size-4 accent-(--ink)" />
+            Please send an NDA before the call.
+          </label>
+        </fieldset>
+
+        <div class="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6" data-nav>
+          <button type="button" class="btn btn-outline" data-back hidden>
+            <Icon name="arrow-left" class="size-4" />
+            Back
+          </button>
+          <div class="ml-auto flex items-center gap-3">
+            <button type="button" class="btn btn-primary" data-next hidden>
+              Continue
+              <Arrow />
+            </button>
+            <button type="submit" class="btn btn-primary" data-submit>
+              Send request
+              <Arrow />
+            </button>
+          </div>
+        </div>
+        {!live && <p class="label mt-4 text-right" data-preview-note>This preview does not send anything. Connect a form endpoint in the site config to go live.</p>}
+
+        <div class="done hidden rounded-lg bg-wash p-8 lg:p-10" data-done tabindex="-1">
+          <span class="grid size-12 place-items-center rounded-sm bg-ink text-accent">
+            <Icon name="check" class="size-5" stroke={2.25} />
+          </span>
+          <h2 class="text-display-md mt-8">Thank you. Your request is in.</h2>
+          <p class="mt-3 max-w-lg text-muted" data-done-text>A partner will confirm your call by email within two working days.</p>
+          {!live && <p class="label mt-6">Preview only: nothing was sent.</p>}
+        </div>
+      </form>
+
+      <aside class="lg:col-span-4 lg:col-start-9">
+        <div class="grid gap-2 lg:sticky lg:top-[calc(var(--header-h)+2rem)]">
+          <div class="on-night relative overflow-hidden rounded-lg p-6">
+            <p class="text-sm text-night-muted">Your call with</p>
+            <div class="mt-4 grid">
+              {
+                partners.map((person, index) => (
+                  <div class="partner flex items-center gap-4" data-partner={person.id} data-industries={person.data.industries.map((ref) => ref.id).join(" ")} data-active={index === 0 ? "" : undefined}>
+                    <Image src={person.data.portrait} alt="" width={128} height={128} class="size-14 rounded-sm object-cover" />
+                    <span>
+                      <span class="block font-medium">{person.data.name}</span>
+                      <span class="block text-sm text-night-muted">{person.data.role}</span>
+                    </span>
+                  </div>
+                ))
+              }
+            </div>
+            <dl class="mt-6 grid gap-3 border-t border-night-line pt-6 text-sm">
+              <div class="flex justify-between gap-4">
+                <dt class="text-night-muted">Topics</dt>
+                <dd class="text-right" data-summary="topics">Not chosen yet</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-night-muted">Industry</dt>
+                <dd class="text-right" data-summary="industry">Not chosen yet</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-night-muted">Size</dt>
+                <dd class="text-right" data-summary="size">Not chosen yet</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-night-muted">Call</dt>
+                <dd class="text-right" data-summary="call">Not chosen yet</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="card p-6">
+            <p class="text-sm text-muted">What happens next</p>
+            <ol class="mt-4 grid gap-4">
+              {
+                consultation.next.map((step, index) => (
+                  <li class="flex gap-4">
+                    <span class="grid size-7 shrink-0 place-items-center rounded-sm bg-white text-xs">{index + 1}</span>
+                    <span>
+                      <span class="block font-medium">{step.title}</span>
+                      <span class="block text-sm text-muted">{step.body}</span>
+                    </span>
+                  </li>
+                ))
+              }
+            </ol>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section border-t border-line">
+    <div class="shell">
+      <Faq title="Before you book" items={consultation.faq} />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .step {
+    min-width: 0;
+  }
+
+  .step + .step {
+    margin-top: 4rem;
+  }
+
+  /* With the script running, one step shows at a time. */
+  [data-wizard] .step:not([data-current]) {
+    display: none;
+  }
+
+  [data-wizard] .step + .step {
+    margin-top: 0;
+  }
+
+  [data-wizard] .step[data-current] {
+    animation: step-in 0.6s var(--ease-out-expo);
+  }
+
+  @keyframes step-in {
+    from {
+      opacity: 0;
+      transform: translateX(1.5rem);
+    }
+  }
+
+  .steps-bar {
+    display: none;
+  }
+
+  [data-wizard] .steps-bar {
+    display: grid;
+  }
+
+  .step-track {
+    display: block;
+    height: 3px;
+    border-radius: 99px;
+    background: var(--line);
+    overflow: hidden;
+  }
+
+  .step-track::after {
+    content: "";
+    display: block;
+    height: 100%;
+    background: var(--ink);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.6s var(--ease-out-expo);
+  }
+
+  .step-pill[data-state="done"] .step-track::after,
+  .step-pill[data-state="current"] .step-track::after {
+    transform: none;
+  }
+
+  .step-pill[data-state="current"] .step-track::after {
+    background: var(--accent-ink);
+  }
+
+  .step-pill:not([data-state]) {
+    color: var(--muted);
+  }
+
+  .choice {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1rem;
+    border-radius: var(--radius);
+    box-shadow: inset 0 0 0 1px var(--line);
+    cursor: pointer;
+    transition:
+      box-shadow 0.2s,
+      background-color 0.2s;
+  }
+
+  .choice:hover {
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+  }
+
+  .choice:has(:checked) {
+    background: var(--wash);
+    box-shadow: inset 0 0 0 1.5px var(--ink);
+  }
+
+  .choice:has(:focus-visible),
+  .chip-choice:has(:focus-visible) {
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 2px;
+  }
+
+  .choice-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-sm);
+    background: var(--wash);
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+
+  .choice:has(:checked) .choice-icon {
+    background: var(--ink);
+    color: var(--accent);
+  }
+
+  .choice-check {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: auto;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+    color: transparent;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+
+  .choice:has(:checked) .choice-check {
+    background: var(--ink);
+    color: var(--accent);
+    box-shadow: none;
+  }
+
+  .chip-choice {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    font-size: 0.9375rem;
+    box-shadow: inset 0 0 0 1px var(--line);
+    cursor: pointer;
+    transition:
+      background-color 0.2s,
+      color 0.2s,
+      box-shadow 0.2s;
+  }
+
+  .chip-choice:hover {
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+
+  .chip-choice:has(:checked) {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .days :global(.day-list) {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    max-width: 30rem;
+    gap: 0.5rem;
+  }
+
+  .days :global(.day) {
+    display: grid;
+    justify-items: center;
+    gap: 0.15rem;
+    padding: 0.7rem 0.25rem;
+    border-radius: var(--radius-sm);
+    box-shadow: inset 0 0 0 1px var(--line);
+    cursor: pointer;
+    transition:
+      background-color 0.2s,
+      color 0.2s,
+      box-shadow 0.2s;
+  }
+
+  .days :global(.day:hover) {
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+
+  .days :global(.day:has(:checked)) {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .days :global(.day:has(:focus-visible)) {
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 2px;
+  }
+
+  .partner {
+    grid-area: 1 / 1;
+    opacity: 0;
+    transform: translateY(0.5rem);
+    transition:
+      opacity 0.35s,
+      transform 0.5s var(--ease-out-expo);
+  }
+
+  .partner[data-active] {
+    opacity: 1;
+    transform: none;
+  }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("[data-booking]");
+
+  if (form) {
+    const steps = [...form.querySelectorAll<HTMLFieldSetElement>("[data-step]")];
+    const pills = [...form.querySelectorAll<HTMLElement>("[data-step-pill]")];
+    const back = form.querySelector<HTMLButtonElement>("[data-back]")!;
+    const next = form.querySelector<HTMLButtonElement>("[data-next]")!;
+    const submit = form.querySelector<HTMLButtonElement>("[data-submit]")!;
+    const live = form.hasAttribute("data-live");
+    const summary = (key: string) => document.querySelector<HTMLElement>(`[data-summary="${key}"]`);
+    const partners = [...document.querySelectorAll<HTMLElement>("[data-partner]")];
+    let current = 0;
+
+    /* Working days from tomorrow, built in the browser so they never go stale. */
+    const daysRoot = form.querySelector<HTMLElement>("[data-days]");
+    if (daysRoot) {
+      const count = Number(daysRoot.dataset.count ?? 10);
+      const list = document.createElement("div");
+      list.className = "day-list";
+      list.setAttribute("role", "radiogroup");
+      list.setAttribute("aria-label", "Day");
+      const date = new Date();
+      const weekday = new Intl.DateTimeFormat(undefined, { weekday: "short" });
+      const month = new Intl.DateTimeFormat(undefined, { month: "short" });
+      const full = new Intl.DateTimeFormat(undefined, { weekday: "long", day: "numeric", month: "long" });
+      let added = 0;
+      while (added < count) {
+        date.setDate(date.getDate() + 1);
+        if (date.getDay() === 0 || date.getDay() === 6) continue;
+        const label = document.createElement("label");
+        label.className = "day";
+        label.innerHTML = `<input type="radio" name="day" class="sr-only" value="${date.toISOString().slice(0, 10)}" data-label="${full.format(date)}" />
+          <span class="text-xs opacity-70">${weekday.format(date)}</span>
+          <span class="text-xl leading-none font-medium">${date.getDate()}</span>
+          <span class="text-xs opacity-70">${month.format(date)}</span>`;
+        list.append(label);
+        added += 1;
+      }
+      daysRoot.querySelector("[data-days-fallback]")?.remove();
+      daysRoot.append(list);
+      form.querySelector("[data-slot-block]")?.classList.remove("hidden");
+    }
+
+    const value = (name: string) => form.querySelector<HTMLInputElement>(`[name="${name}"]:checked`);
+
+    const update = () => {
+      const topics = [...form.querySelectorAll<HTMLInputElement>('[name="topics"]:checked')].map((input) => input.value);
+      const industry = value("industry");
+      const size = value("size");
+      const day = value("day");
+      const slot = value("slot");
+      const set = (key: string, text: string | undefined) => {
+        const cell = summary(key);
+        if (cell) cell.textContent = text || "Not chosen yet";
+      };
+      set("topics", topics.length > 2 ? `${topics.length} areas` : topics.join(", "));
+      set("industry", industry?.dataset.label);
+      set("size", size?.value);
+      set("call", day ? `${day.dataset.label}${slot ? `, ${slot.value}` : ""}` : undefined);
+      const match = partners.find((partner) => industry && (partner.dataset.industries ?? "").split(" ").includes(industry.value)) ?? partners[0];
+      partners.forEach((partner) => partner.toggleAttribute("data-active", partner === match));
+    };
+
+    const showError = (key: string, show: boolean) => form.querySelector(`[data-error-for="${key}"]`)?.classList.toggle("hidden", !show);
+
+    const valid = (index: number) => {
+      const step = steps[index];
+      let ok = true;
+      step.querySelectorAll<HTMLElement>("[data-required-group]").forEach((group) => {
+        const key = group.dataset.requiredGroup!;
+        if (!group.querySelector("input[type=radio], input[type=checkbox]")) return;
+        const filled = !!group.querySelector("input:checked");
+        showError(key, !filled);
+        if (!filled) ok = false;
+      });
+      step.querySelectorAll<HTMLInputElement>("input[required]").forEach((input) => {
+        const filled = input.type === "email" ? /^\S+@\S+\.\S+$/.test(input.value.trim()) : input.value.trim() !== "";
+        input.setAttribute("aria-invalid", String(!filled));
+        showError(input.name, !filled);
+        if (!filled) ok = false;
+      });
+      if (!ok) step.querySelector<HTMLElement>("[aria-invalid=true], input")?.focus();
+      return ok;
+    };
+
+    const go = (index: number, focus = true) => {
+      current = index;
+      steps.forEach((step, i) => step.toggleAttribute("data-current", i === index));
+      pills.forEach((pill, i) => {
+        if (i < index) pill.dataset.state = "done";
+        else if (i === index) pill.dataset.state = "current";
+        else delete pill.dataset.state;
+      });
+      back.hidden = index === 0;
+      next.hidden = index === steps.length - 1;
+      submit.hidden = index !== steps.length - 1;
+      if (focus) steps[index].querySelector<HTMLElement>("legend")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    };
+
+    form.setAttribute("data-wizard", "");
+    go(0, false);
+    update();
+
+    form.addEventListener("change", (event) => {
+      update();
+      const target = event.target as HTMLInputElement;
+      const group = target.closest<HTMLElement>("[data-required-group]");
+      if (group && target.checked) showError(group.dataset.requiredGroup!, false);
+    });
+    form.addEventListener("input", (event) => {
+      const target = event.target as HTMLInputElement;
+      if (target.getAttribute("aria-invalid") === "true" && target.value.trim()) {
+        target.setAttribute("aria-invalid", "false");
+        showError(target.name, false);
+      }
+    });
+
+    next.addEventListener("click", () => valid(current) && go(current + 1));
+    back.addEventListener("click", () => go(current - 1));
+
+    form.addEventListener("submit", (event) => {
+      if (!valid(current)) return event.preventDefault();
+      if (live) return;
+      event.preventDefault();
+      const name = (form.querySelector<HTMLInputElement>('[name="name"]')?.value ?? "").trim().split(" ")[0];
+      const partner = partners.find((item) => item.hasAttribute("data-active"))?.querySelector(".font-medium")?.textContent;
+      const day = value("day")?.dataset.label;
+      const slot = value("slot")?.value;
+      const text = form.querySelector<HTMLElement>("[data-done-text]");
+      if (text && partner) text.textContent = `Thanks, ${name}. ${partner} will confirm your call${day ? ` on ${day}${slot ? ` at ${slot}` : ""}` : ""} by email within two working days.`;
+      steps.forEach((step) => step.removeAttribute("data-current"));
+      ["[data-nav]", ".steps-bar", "[data-preview-note]"].forEach((selector) => form.querySelector(selector)?.setAttribute("hidden", ""));
+      const done = form.querySelector<HTMLElement>("[data-done]");
+      done?.classList.remove("hidden");
+      done?.focus();
+    });
+  }
+</script>

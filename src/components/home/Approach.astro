@@ -1,0 +1,30 @@
+---
+import SectionHead from "@/components/ui/SectionHead.astro";
+import { home } from "@/config/home";
+
+const { approach } = home;
+---
+
+<section class="on-night glass glass-3 relative overflow-hidden" data-tone="dark">
+  <div class="shell section relative">
+    <SectionHead eyebrow={approach.eyebrow} title={approach.title} lead={approach.lead} align="center" />
+
+    <ol class="steps relative mt-16 grid gap-3 md:grid-cols-2 lg:mt-20 lg:grid-cols-4">
+      {
+        approach.steps.map((step, index) => (
+          <li class="step reveal relative flex flex-col rounded-(--radius) bg-night-raised p-6 ring-1 ring-night-line lg:p-7" style={`--i:${index}`}>
+            <span class="flex items-center justify-between">
+              <span class="grid size-10 place-items-center rounded-sm bg-white/6 text-sm ring-1 ring-white/10">{String(index + 1).padStart(2, "0")}</span>
+              <span class="tag">{step.duration}</span>
+            </span>
+            <span class="mt-14 block text-display-md">{step.title}</span>
+            <span class="mt-3 block text-night-muted">{step.body}</span>
+            <span class="step-bar mt-8 block h-0.5 overflow-hidden rounded-full bg-white/8">
+              <span class="block h-full bg-accent" style={`width:${(index + 1) * 25}%`} />
+            </span>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>

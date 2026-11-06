@@ -1,0 +1,46 @@
+---
+import { Image } from "astro:assets";
+import Icon from "@/components/ui/Icon.astro";
+import { formatDate, eventParts } from "@/lib/format";
+import { insightHref, typeOne, type Insight } from "@/lib/insights";
+
+interface Props {
+  entry: Insight;
+  /** Prints an author line under the title. */
+  byline?: string;
+  sizes?: string;
+  headingLevel?: "h2" | "h3";
+}
+
+const { entry, byline, sizes = "(min-width: 64rem) 26rem, (min-width: 40rem) 45vw, 92vw", headingLevel: Heading = "h3" } = Astro.props;
+const { type, cover, event, report } = entry.data;
+const when = event ? eventParts(event.start) : undefined;
+---
+
+<a href={insightHref(entry)} class="group flex h-full flex-col">
+  <span class="media relative block aspect-16/10">
+    {cover && <Image src={cover} alt="" widths={[480, 720, 960]} sizes={sizes} class="size-full object-cover transition-transform duration-1000 ease-(--ease-out-expo) group-hover:scale-[1.04]" />}
+    {
+      when && (
+        <span class="absolute top-4 left-4 grid min-w-14 rounded-sm bg-white px-2.5 py-2 text-center text-ink">
+          <span class="text-[1.375rem] leading-none font-medium tracking-tight">{when.day}</span>
+          <span class="mt-1 text-[0.6875rem] font-medium tracking-[0.08em] uppercase">{when.month}</span>
+        </span>
+      )
+    }
+  </span>
+  <span class="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+    <span class="inline-flex items-center gap-1.5 font-medium text-accent-ink">
+      <Icon name={type === "events" ? "calendar-days" : type === "reports" ? "file-text" : "newspaper"} class="size-3.5" />
+      {typeOne(type)}
+    </span>
+    <span aria-hidden="true">·</span>
+    {event ? <span>{event.format === "Online" ? "Online" : event.city}</span> : <time datetime={entry.data.date.toISOString()}>{formatDate(entry.data.date)}</time>}
+    {report && <span aria-hidden="true">·</span>}
+    {report && <span>{report.pages} pages</span>}
+  </span>
+  <Heading class="mt-2 text-title">
+    <span class="link">{entry.data.title}</span>
+  </Heading>
+  {byline && <span class="mt-auto pt-4 text-sm text-muted">{byline}</span>}
+</a>

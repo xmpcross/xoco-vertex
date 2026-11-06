@@ -1,0 +1,84 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { formatDate } from "@/lib/format";
+import { getInsights, insightHref, typeOne } from "@/lib/insights";
+
+const entries = await getInsights();
+---
+
+<BaseLayout title="Search insights" description="Search every Vertex article, report and event." noindex>
+  <PageHeader eyebrow="Insights" title="Search" crumbs={[{ label: "Insights", href: "/insights/" }, { label: "Search", href: "/insights/search/" }]}>
+    <form class="rise mt-10 flex max-w-2xl items-center gap-3 rounded-sm bg-white p-1.5 pl-4 text-ink" role="search" style="--i:3" data-search-page>
+      <Icon name="search" class="size-4 text-muted" />
+      <label for="search-page-input" class="sr-only">Search insights</label>
+      <input id="search-page-input" name="q" type="search" autocomplete="off" placeholder="Try “pricing” or “mergers”" class="h-11 min-w-0 flex-1 bg-transparent text-lg outline-none placeholder:text-faint" />
+      <button type="submit" class="btn btn-primary btn-sm">Search</button>
+    </form>
+  </PageHeader>
+
+  <section class="shell section pt-12!" aria-label="Results">
+    <p class="label" aria-live="polite" data-search-summary>{entries.length} entries</p>
+    <ol class="mt-4 max-w-3xl" data-search-list>
+      {
+        entries.map((entry) => (
+          <li data-href={insightHref(entry)} class="border-b border-line">
+            <a href={insightHref(entry)} class="group block py-6">
+              <span class="link text-title">{entry.data.title}</span>
+              <span class="mt-2 block text-sm text-muted">
+                {typeOne(entry.data.type)} · {formatDate(entry.data.date)}
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+</BaseLayout>
+
+<script>
+  import { rankEntries, type SearchItem } from "@/lib/search";
+
+  const form = document.querySelector<HTMLFormElement>("[data-search-page]");
+  const input = form?.querySelector("input");
+  const list = document.querySelector<HTMLOListElement>("[data-search-list]");
+  const summary = document.querySelector<HTMLElement>("[data-search-summary]");
+  const rows = [...(list?.querySelectorAll<HTMLLIElement>("li") ?? [])];
+  let index: SearchItem[] | null = null;
+
+  const run = async () => {
+    if (!input || !list || !summary) return;
+    const query = input.value.trim();
+    const url = new URL(window.location.href);
+    if (query) url.searchParams.set("q", query);
+    else url.searchParams.delete("q");
+    history.replaceState(null, "", url);
+
+    if (!query) {
+      rows.forEach((row) => (row.hidden = false));
+      summary.textContent = `${rows.length} entries`;
+      return;
+    }
+    index ??= await fetch("/search-index.json")
+      .then((response) => response.json() as Promise<SearchItem[]>)
+      .catch(() => []);
+    const ranked = rankEntries(index, query).map((item) => item.href);
+    rows.forEach((row) => (row.hidden = !ranked.includes(row.dataset.href ?? "")));
+    ranked.forEach((href) => {
+      const row = rows.find((item) => item.dataset.href === href);
+      if (row) list.append(row);
+    });
+    summary.textContent = ranked.length ? `${ranked.length} result${ranked.length === 1 ? "" : "s"} for “${query}”` : `Nothing matches “${query}”.`;
+  };
+
+  if (input) {
+    input.value = new URLSearchParams(window.location.search).get("q") ?? "";
+    input.addEventListener("input", run);
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      void run();
+    });
+    if (input.value) void run();
+  }
+</script>

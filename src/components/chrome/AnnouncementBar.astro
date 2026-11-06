@@ -1,0 +1,32 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import { siteConfig } from "@/config/site";
+import { formatShortDate } from "@/lib/format";
+import { getInsights, insightHref, upcomingEvents } from "@/lib/insights";
+
+/** The next upcoming event, above the header. Renders nothing when there is none. */
+const next = siteConfig.announcement.enabled ? upcomingEvents(await getInsights())[0] : undefined;
+const event = next?.data.event;
+---
+
+{
+  next && event && (
+    <a href={insightHref(next)} class="announcement group block bg-iris text-ink">
+      <span class="shell flex h-10 items-center justify-center gap-x-3 text-center text-[0.8125rem] leading-snug">
+        <span class="truncate">
+          <span class="font-medium">{next.data.title}</span>
+          <span class="hidden sm:inline">
+            : {formatShortDate(event.start)}, {event.format === "Online" ? "online" : event.city}
+          </span>
+        </span>
+        <span aria-hidden="true" class="hidden opacity-50 sm:inline">
+          ·
+        </span>
+        <span class="hidden shrink-0 items-center gap-1 font-medium sm:inline-flex">
+          <span class="link">{siteConfig.announcement.cta}</span>
+          <Icon name="arrow-right" class="size-3.5" />
+        </span>
+      </span>
+    </a>
+  )
+}

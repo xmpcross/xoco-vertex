@@ -1,0 +1,160 @@
+---
+import { Image } from "astro:assets";
+import careersPhoto from "@/assets/images/careers.jpg";
+import Arrow from "@/components/ui/Arrow.astro";
+import Icon from "@/components/ui/Icon.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import SectionHead from "@/components/ui/SectionHead.astro";
+import { careers, roles } from "@/config/careers";
+import { officeById } from "@/config/offices";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+const teams = [...new Set(roles.map((role) => role.team))];
+---
+
+<BaseLayout title="Careers" description={careers.lead} image={careersPhoto} imageAlt="Young colleagues talking in a modern office">
+  <PageHeader glass={3} eyebrow="Careers" title={careers.title} lead={careers.lead} crumbs={[{ label: "Careers", href: "/careers/" }]} class="pb-28 lg:pb-40">
+    <div class="rise mt-10 flex flex-wrap gap-3" style="--i:3">
+      <a href="#roles" class="btn btn-light">
+        See {roles.length} open roles
+        <Arrow />
+      </a>
+    </div>
+  </PageHeader>
+
+  <div class="shell relative -mt-28 lg:-mt-40">
+    <div class="media rise aspect-video rounded-lg" style="--i:3">
+      <Image src={careersPhoto} alt="Four young colleagues with notebooks chatting in a modern loft office" widths={[640, 960, 1400, 1800]} sizes="(min-width: 82rem) 82rem, 92vw" loading="eager" class="size-full object-cover" />
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="shell">
+      <SectionHead eyebrow="Ways in" title={["Three paths,", "one partnership"]} align="split" />
+      <ul class="mt-14 grid gap-2 md:grid-cols-3 lg:mt-20">
+        {
+          careers.paths.map((path, index) => (
+            <li class="card reveal flex flex-col p-6 lg:p-8" style={`--i:${index}`}>
+              <Icon name={path.icon} class="size-6" />
+              <h3 class="mt-14 text-title lg:mt-20">{path.title}</h3>
+              <p class="mt-2 text-muted">{path.body}</p>
+              <p class="mt-6 border-t border-line-strong/60 pt-4 text-sm">{path.entry}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="on-night glass glass-4 relative overflow-hidden" data-tone="dark">
+    <div class="shell section relative">
+      <SectionHead eyebrow="Life at Vertex" title={["Built for people who", "want to grow fast"]} align="center" />
+      <dl class="mt-14 grid gap-3 sm:grid-cols-2 lg:mt-20 lg:grid-cols-4">
+        {
+          careers.benefits.map((item, index) => (
+            <div class="card reveal flex min-h-48 flex-col justify-between p-6 ring-1 ring-night-line" style={`--i:${index}`}>
+              <dt class="order-2 mt-6 text-night-muted">{item.label}</dt>
+              <dd class="text-stat order-1 text-accent">{item.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+
+  <section class="section scroll-mt-(--header-h)" id="roles" data-roles>
+    <div class="shell">
+      <div class="flex flex-wrap items-end justify-between gap-6">
+        <SectionHead eyebrow="Open roles" title={["Join", "the team"]} />
+        <div class="flex flex-wrap gap-1.5" role="group" aria-label="Filter roles by team">
+          <button type="button" class="role-tab" aria-pressed="true" data-team="">All teams</button>
+          {
+            teams.map((team) => (
+              <button type="button" class="role-tab" aria-pressed="false" data-team={team}>
+                {team}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+      <ul class="mt-12 border-t border-line lg:mt-16">
+        {
+          roles.map((role) => (
+            <li data-role={role.team}>
+              <a href={role.applyUrl} class="group grid items-center gap-x-6 gap-y-2 border-b border-line py-6 transition-colors hover:bg-wash sm:grid-cols-[1fr_10rem_9rem_9rem] sm:px-4" rel="noopener noreferrer" target="_blank">
+                <span class="text-title">{role.title}</span>
+                <span class="text-muted">{role.team}</span>
+                <span class="flex items-center gap-2 text-muted">
+                  <Icon name="map-pin" class="size-3.5" />
+                  {officeById(role.office)?.city}
+                </span>
+                <span class="hidden items-center justify-end gap-3 sm:inline-flex">
+                  {role.type === "Internship" && <span class="tag">Internship</span>}
+                  <span class="grid size-10 place-items-center rounded-sm ring-1 ring-line-strong transition-colors group-hover:bg-ink group-hover:text-white group-hover:ring-ink">
+                    <Arrow out />
+                  </span>
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="mt-8 text-muted">
+        Don't see your role? Write to <a href="mailto:careers@example.com" class="link-quiet text-ink">careers@example.com</a> and tell us what you would bring.
+      </p>
+    </div>
+  </section>
+
+  <section class="section bg-wash">
+    <div class="shell">
+      <SectionHead eyebrow="How we hire" title={["Four steps,", "about three weeks"]} />
+      <ol class="mt-12 grid gap-2 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4">
+        {
+          careers.process.map((step, index) => (
+            <li class="reveal flex flex-col rounded-(--radius) bg-white p-6 lg:p-7" style={`--i:${index}`}>
+              <span class="grid size-10 place-items-center rounded-sm bg-ink text-sm text-accent">{String(index + 1).padStart(2, "0")}</span>
+              <h3 class="mt-12 text-title">{step.title}</h3>
+              <p class="mt-2 text-muted">{step.body}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .role-tab {
+    min-height: 2.25rem;
+    padding: 0 0.9rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    box-shadow: inset 0 0 0 1px var(--line);
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+
+  .role-tab:hover {
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+
+  .role-tab[aria-pressed="true"] {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: none;
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>("[data-roles]");
+  const tabs = [...(root?.querySelectorAll<HTMLButtonElement>("[data-team]") ?? [])];
+  const rows = [...(root?.querySelectorAll<HTMLElement>("[data-role]") ?? [])];
+  tabs.forEach((tab) =>
+    tab.addEventListener("click", () => {
+      const team = tab.dataset.team ?? "";
+      tabs.forEach((other) => other.setAttribute("aria-pressed", String(other === tab)));
+      rows.forEach((row) => (row.hidden = !!team && row.dataset.role !== team));
+    }),
+  );
+</script>

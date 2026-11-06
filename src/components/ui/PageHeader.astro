@@ -1,0 +1,46 @@
+---
+import TwoTone from "@/components/ui/TwoTone.astro";
+
+/** The dark band that opens inner pages. Extra content goes in the default slot. */
+interface Props {
+  eyebrow?: string;
+  title: string | string[];
+  lead?: string;
+  crumbs?: { label: string; href: string }[];
+  /** Which arrangement of light shows through the glass, 1 to 5. */
+  glass?: 1 | 2 | 3 | 4 | 5;
+  class?: string;
+}
+
+const { eyebrow, title, lead, crumbs = [], glass = 2, class: className } = Astro.props;
+---
+
+<section class:list={["on-night glass relative overflow-hidden", glass > 1 && `glass-${glass}`, className]} data-tone="dark">
+  <div class="shell pt-16 pb-20 lg:pt-24 lg:pb-28">
+    {
+      crumbs.length > 0 && (
+        <nav aria-label="Breadcrumb" class="rise mb-8 text-sm text-night-muted">
+          <ol class="flex flex-wrap items-center gap-2">
+            <li>
+              <a href="/" class="hover:text-night-ink">
+                Home
+              </a>
+            </li>
+            {crumbs.map((crumb) => (
+              <li class="flex items-center gap-2">
+                <span aria-hidden="true">/</span>
+                <a href={crumb.href} class="hover:text-night-ink">
+                  {crumb.label}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )
+    }
+    {eyebrow && <p class="eyebrow rise mb-6">{eyebrow}</p>}
+    <h1 class="text-display-xl rise max-w-5xl" style="--i:1"><TwoTone parts={title} /></h1>
+    {lead && <p class="rise mt-6 max-w-2xl text-lead text-night-muted" style="--i:2">{lead}</p>}
+    <slot />
+  </div>
+</section>
